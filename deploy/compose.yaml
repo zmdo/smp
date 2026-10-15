@@ -1,0 +1,92 @@
+# 控制机。策略容器不在这里跑，后面通过 SSH 部署到登记过的服务器。
+# 在仓库根目录执行：
+#   wsl -d Ubuntu-24.04 -- docker compose -f deploy/compose.yaml up --build
+# 打开 http://127.0.0.1:8080 ，默认口令 changeme。正式使用前改掉 ADMIN_PASSWORD。
+
+name: smp
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: smp
+      POSTGRES_PASSWORD: smp_dev
+      POSTGRES_DB: smp
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smp -d smp"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/web-api/Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://smp:smp_dev@postgres:5432/smp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  ops:
+    build:
+      context: ..
+      dockerfile: apps/ops/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://ops:ops_dev@postgres:5432/smp
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+      INSPECT_INTERVAL_SECONDS: "30"
+    volumes:
+      - ops-keys:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  web-api:
+    build:
+      context: ..
+      dockerfile: apps/web-api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://web_api:web_api_dev@postgres:5432/smp
+      OPS_URL: http://ops:8081
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      ops:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  web-ui:
+    build:
+      context: ..
+      dockerfile: apps/web-ui/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      web-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  ops-keys:
