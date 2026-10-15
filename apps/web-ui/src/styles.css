@@ -335,8 +335,87 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   border-top: 1px solid var(--line);
 }
 
-form.panel-form { display: grid; gap: 14px; max-width: 640px; }
-form.panel-form .triple { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+form.panel-form { display: grid; gap: 14px; max-width: 980px; }
+form.panel-form .triple {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+form.panel-form .triple > label,
+form.panel-form .triple > .field { min-width: 0; }
+form.panel-form .field { display: grid; gap: 6px; color: #606266; }
+form.panel-form .triple input,
+form.panel-form .triple select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.state-pick { position: relative; min-width: 0; }
+.state-trigger {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 4px;
+  padding: 0 28px 0 10px;
+  text-align: left;
+  color: inherit;
+  position: relative;
+}
+.state-trigger::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 13px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #909399;
+}
+.state-trigger .placeholder { color: var(--muted); }
+.state-trigger strong,
+.state-menu strong { font-weight: 700; }
+.state-pick:focus-within .state-trigger,
+.state-trigger:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 94, 235, 0.12);
+}
+.state-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(31, 35, 41, 0.12);
+  padding: 4px 0;
+}
+.state-menu button {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 0;
+}
+.state-menu button:hover,
+.state-menu button.on { background: var(--primary-soft); }
+form.panel-form .triple .state-proxy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
 img.qr { width: 196px; height: 196px; background: #fff; border: 1px solid #e4e7ed; border-radius: 4px; }
 form.panel-form label, .login-card label { display: grid; gap: 6px; color: #606266; }
 .choices { display: flex; gap: 20px; }

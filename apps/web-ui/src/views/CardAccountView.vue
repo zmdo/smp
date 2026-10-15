@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ApiError, api } from "../api";
 import places from "../geo/places.json";
 
 const countries = places.countries;
 const usStates = places.usStates;
-const unitedStates = "美国";
+const unitedStates = "United States";
 
 interface Card {
   id: string;
@@ -39,13 +39,20 @@ const region = ref("");
 const city = ref("");
 const isUnitedStates = computed(() => country.value === unitedStates);
 const cities = computed(() => usStates.find((item) => item.name === region.value)?.cities ?? []);
+const selectedState = computed(() => usStates.find((item) => item.name === region.value));
+const stateOpen = ref(false);
+const statePickEl = ref<HTMLElement | null>(null);
 const address1 = ref("");
 const address2 = ref("");
 const postalCode = ref("");
 const note = ref("");
 const revealed = ref<Record<string, { number: string; cvv: string }>>({});
 
-onMounted(load);
+onMounted(() => {
+  load();
+  document.addEventListener("pointerdown", closeStateMenu);
+});
+onUnmounted(() => document.removeEventListener("pointerdown", closeStateMenu));
 
 async function load() {
   try {
@@ -120,6 +127,17 @@ async function reveal(item: Card) {
 function onCountryChange() {
   region.value = "";
   city.value = "";
+  stateOpen.value = false;
+}
+
+function closeStateMenu(event: Event) {
+  if (!statePickEl.value?.contains(event.target as Node)) stateOpen.value = false;
+}
+
+function chooseState(item: { code: string; name: string }) {
+  region.value = item.name;
+  city.value = "";
+  stateOpen.value = false;
 }
 
 function billing(item: Card) {
@@ -160,14 +178,28 @@ async function remove(item: Card) {
               <option v-for="item in countries" :key="item" :value="item">{{ item }}</option>
             </select>
           </label>
-          <label>
-            地区/州
-            <select v-if="isUnitedStates" v-model="region" required @change="city = ''">
-              <option value="" disabled>请选择</option>
-              <option v-for="item in usStates" :key="item.code" :value="item.name">{{ item.name }}</option>
-            </select>
+          <div class="field">
+            <span>地区/州</span>
+            <div v-if="isUnitedStates" ref="statePickEl" class="state-pick">
+              <button type="button" class="state-trigger" @click="stateOpen = !stateOpen">
+                <span v-if="selectedState">(<strong>{{ selectedState.code }}</strong>) {{ selectedState.name }}</span>
+                <span v-else class="placeholder">请选择</span>
+              </button>
+              <div v-if="stateOpen" class="state-menu">
+                <button
+                  v-for="item in usStates"
+                  :key="item.code"
+                  type="button"
+                  :class="{ on: item.name === region }"
+                  @click="chooseState(item)"
+                >
+                  (<strong>{{ item.code }}</strong>) {{ item.name }}
+                </button>
+              </div>
+              <input class="state-proxy" :value="region" required tabindex="-1" @invalid="stateOpen = true" />
+            </div>
             <input v-else v-model="region" required maxlength="80" />
-          </label>
+          </div>
           <label>
             市
             <select v-if="isUnitedStates" v-model="city" required :disabled="!region">
