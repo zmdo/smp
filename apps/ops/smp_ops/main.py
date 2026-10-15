@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from smp_ops.config import settings
-from smp_ops.crypto import encrypt, load_fernet
+from smp_ops.crypto import decrypt, encrypt, load_fernet
 from smp_ops.ssh import OpsSSHError, fingerprint_of, load_private_key
 from smp_ops.worker import build_session_factory, schedule_loop, worker_loop
 
@@ -35,6 +35,14 @@ class EncryptIn(BaseModel):
 class EncryptOut(BaseModel):
     ciphertext: str
     fingerprint: str | None = None
+
+
+class DecryptIn(BaseModel):
+    ciphertext: str = Field(min_length=1)
+
+
+class DecryptOut(BaseModel):
+    plaintext: str
 
 
 @asynccontextmanager
@@ -84,3 +92,11 @@ def encrypt_secret(body: EncryptIn) -> EncryptOut:
     else:
         raise HTTPException(status_code=422, detail="认证方式只能是私钥或口令")
     return EncryptOut(ciphertext=encrypt(fernet, plaintext), fingerprint=fingerprint)
+
+
+@app.post("/internal/secrets/decrypt", response_model=DecryptOut, dependencies=[Depends(require_token)])
+def decrypt_secret(body: DecryptIn) -> DecryptOut:
+    try:
+        return DecryptOut(plaintext=decrypt(fernet, body.ciphertext))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="无法解密") from exc

@@ -41,10 +41,10 @@ async function submit() {
         <span class="logo-mark">策</span>
         <h1>策略控制台</h1>
       </div>
-      <p class="muted">使用账户和密码登录。开启两步验证后，还需要验证码。</p>
+      <p class="muted">使用用户名和密码登录。开启两步验证后，还需要验证码。</p>
       <p v-if="error" class="banner error">{{ error }}</p>
       <label>
-        账户
+        用户名
         <input v-model="username" autocomplete="username" required />
       </label>
       <label>

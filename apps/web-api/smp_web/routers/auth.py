@@ -9,6 +9,7 @@ from smp_web.schemas import (
     LoginOut,
     MeOut,
     PasswordChangeIn,
+    UsernameChangeIn,
     TotpCodeIn,
     TotpDisableIn,
     TotpSetupOut,
@@ -47,7 +48,7 @@ def _me(request: Request, session: Session) -> MeOut:
 def login(body: LoginIn, request: Request, session: Session = Depends(get_session)) -> LoginOut:
     account = _account(session, body.username.strip())
     if account is None or not verify_password(body.password, account.password_hash):
-        raise HTTPException(status_code=401, detail="账户或密码不正确")
+        raise HTTPException(status_code=401, detail="用户名或密码不正确")
     if account.totp_enabled:
         if not body.totp_code or not body.totp_code.strip():
             return LoginOut(ok=False, totp_required=True)
@@ -71,6 +72,25 @@ def me(request: Request, session: Session = Depends(get_session)) -> MeOut:
 @router.get("/session", dependencies=[Depends(require_user)])
 def session_ok() -> dict[str, bool]:
     return {"ok": True}
+
+
+@router.post("/username", dependencies=[Depends(require_user)])
+def change_username(
+    body: UsernameChangeIn,
+    request: Request,
+    username: str = Depends(require_user),
+    session: Session = Depends(get_session),
+) -> dict[str, str]:
+    account = _current(session, username)
+    cleaned = body.username.strip()
+    if not cleaned or any(character.isspace() for character in cleaned):
+        raise HTTPException(status_code=422, detail="用户名不能包含空格")
+    if cleaned == account.username:
+        return {"username": cleaned}
+    account.username = cleaned
+    session.commit()
+    request.session["user"] = cleaned
+    return {"username": cleaned}
 
 
 @router.post("/password", dependencies=[Depends(require_user)])

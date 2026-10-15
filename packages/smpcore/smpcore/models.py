@@ -138,6 +138,22 @@ class OpsJob(Base):
     server: Mapped[Server] = relationship(back_populates="jobs")
 
 
+class VirtualCard(Base):
+    __tablename__ = "virtual_cards"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    holder: Mapped[str] = mapped_column(String(80), nullable=False)
+    expiry: Mapped[str] = mapped_column(String(5), nullable=False)
+    last4: Mapped[str] = mapped_column(String(4), nullable=False)
+    number_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    cvv_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+
 class Account(Base):
     __tablename__ = "accounts"
     __table_args__ = (UniqueConstraint("username", name="uq_accounts_username"),)

@@ -13,6 +13,46 @@ class FieldError(ValueError):
     pass
 
 
+def _luhn(digits: str) -> bool:
+    total = 0
+    for index, character in enumerate(reversed(digits)):
+        value = int(character)
+        if index % 2 == 1:
+            value *= 2
+            if value > 9:
+                value -= 9
+        total += value
+    return total % 10 == 0
+
+
+def clean_card_number(value: str) -> str:
+    digits = "".join(character for character in value if character.isdigit())
+    if len(digits) < 13 or len(digits) > 19 or not _luhn(digits):
+        raise FieldError("卡号不正确")
+    return digits
+
+
+def clean_expiry(value: str) -> str:
+    cleaned = value.strip()
+    if re.fullmatch(r"(0[1-9]|1[0-2])/\d{2}", cleaned) is None:
+        raise FieldError("有效期格式应为 MM/YY")
+    return cleaned
+
+
+def clean_cvv(value: str) -> str:
+    cleaned = value.strip()
+    if re.fullmatch(r"\d{3,4}", cleaned) is None:
+        raise FieldError("安全码应为 3 或 4 位数字")
+    return cleaned
+
+
+def clean_holder(value: str) -> str:
+    cleaned = " ".join(value.split())
+    if not cleaned or len(cleaned) > 80:
+        raise FieldError("持卡人需要 1 到 80 个字符")
+    return cleaned
+
+
 def clean_name(value: str) -> str:
     cleaned = value.strip()
     if not cleaned or len(cleaned) > 80:

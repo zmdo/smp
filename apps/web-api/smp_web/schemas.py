@@ -44,6 +44,34 @@ class PasswordChangeIn(BaseModel):
     new_password: str = Field(min_length=1, max_length=72)
 
 
+class UsernameChangeIn(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+
+
+class VirtualCardIn(BaseModel):
+    name: str
+    holder: str
+    number: str
+    expiry: str
+    cvv: str
+    note: str = ""
+
+
+class VirtualCardOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    holder: str
+    expiry: str
+    last4: str
+    note: str
+    created_at: datetime
+
+
+class VirtualCardSecretOut(BaseModel):
+    number: str
+    cvv: str
+
+
 class SshKeyIn(BaseModel):
     name: str
     secret: str = Field(min_length=1)

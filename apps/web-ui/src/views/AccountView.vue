@@ -14,9 +14,29 @@ const disablePassword = ref("");
 const disableCode = ref("");
 const currentPassword = ref("");
 const newPassword = ref("");
+const username = ref("");
 const busy = ref(false);
 
-onMounted(() => auth.refresh());
+onMounted(async () => {
+  await auth.refresh();
+  username.value = auth.username || "";
+});
+
+async function saveUsername() {
+  error.value = "";
+  message.value = "";
+  busy.value = true;
+  try {
+    await api("/api/auth/username", { method: "POST", body: JSON.stringify({ username: username.value }) });
+    message.value = "用户名已修改";
+    await auth.refresh();
+    username.value = auth.username || "";
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : "修改失败";
+  } finally {
+    busy.value = false;
+  }
+}
 
 async function beginSetup() {
   error.value = "";
@@ -99,7 +119,10 @@ async function changePassword() {
       <h1><i class="mark"></i>登录安全</h1>
     </header>
     <div class="panel-body">
-      <p class="muted" style="margin-top: 0">账户 {{ auth.username || "—" }}。两步验证可以随时开启或关闭。</p>
+      <form class="panel-form" @submit.prevent="saveUsername">
+        <label>用户名<input v-model="username" autocomplete="username" required /></label>
+        <button class="primary" type="submit" :disabled="busy">保存用户名</button>
+      </form>
       <p>两步验证：<strong>{{ auth.totpEnabled ? "已开启" : "未开启" }}</strong></p>
 
       <template v-if="!auth.totpEnabled">

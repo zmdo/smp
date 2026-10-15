@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from smp_web.accounts import ensure_default_account
 from smp_web.config import settings
 from smp_web.deps import SessionLocal
-from smp_web.routers import auth, jobs, keys, servers
+from smp_web.routers import auth, cards, jobs, keys, servers
 
 
 @asynccontextmanager
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(servers.router)
 app.include_router(keys.router)
+app.include_router(cards.router)
 app.include_router(jobs.router)
 
 

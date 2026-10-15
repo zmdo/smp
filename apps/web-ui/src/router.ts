@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuth } from "./stores/auth";
 import AccountView from "./views/AccountView.vue";
+import CardAccountView from "./views/CardAccountView.vue";
+import CryptoAccountView from "./views/CryptoAccountView.vue";
 import KeyListView from "./views/KeyListView.vue";
 import LoginView from "./views/LoginView.vue";
 import ServerDetailView from "./views/ServerDetailView.vue";
@@ -17,7 +19,10 @@ export const router = createRouter({
     { path: "/servers/:id/edit", name: "server-edit", component: ServerFormView },
     { path: "/servers/:id", name: "server-detail", component: ServerDetailView },
     { path: "/keys", name: "keys", component: KeyListView },
-    { path: "/account", name: "account", component: AccountView },
+    { path: "/account", redirect: "/settings" },
+    { path: "/settings", name: "settings", component: AccountView },
+    { path: "/accounts/crypto", name: "crypto-accounts", component: CryptoAccountView },
+    { path: "/accounts/cards", name: "card-accounts", component: CardAccountView },
   ],
 });
 
