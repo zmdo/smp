@@ -50,19 +50,33 @@ class UsernameChangeIn(BaseModel):
 
 class VirtualCardIn(BaseModel):
     name: str
+    platform: str
     holder: str
     number: str
     expiry: str
     cvv: str
+    country: str
+    region: str
+    city: str
+    address1: str
+    address2: str = ""
+    postal_code: str
     note: str = ""
 
 
 class VirtualCardOut(BaseModel):
     id: uuid.UUID
     name: str
+    platform: str
     holder: str
     expiry: str
     last4: str
+    country: str
+    region: str
+    city: str
+    address1: str
+    address2: str
+    postal_code: str
     note: str
     created_at: datetime
 

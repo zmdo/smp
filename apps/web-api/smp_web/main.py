@@ -5,6 +5,7 @@ from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
 
 from smp_web.accounts import ensure_default_account
+from smp_web.routers.cards import ensure_virtual_card_columns
 from smp_web.config import settings
 from smp_web.deps import SessionLocal
 from smp_web.routers import auth, cards, jobs, keys, servers
@@ -13,6 +14,7 @@ from smp_web.routers import auth, cards, jobs, keys, servers
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     ensure_default_account()
+    ensure_virtual_card_columns()
     yield
 
 

@@ -1,28 +1,24 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuth } from "./stores/auth";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuth();
-const accountsOpen = ref(true);
+const openGroup = ref<string | null>(null);
 
-watch(
-  () => route.path,
-  (path) => {
-    if (path.startsWith("/accounts")) accountsOpen.value = true;
-  },
-  { immediate: true },
-);
-
-function toggleAccounts() {
-  if (!route.path.startsWith("/accounts")) {
-    accountsOpen.value = true;
-    void router.push("/accounts/crypto");
+function toggleGroup(name: string, path: string) {
+  if (openGroup.value === name) {
+    openGroup.value = null;
     return;
   }
-  accountsOpen.value = !accountsOpen.value;
+  openGroup.value = name;
+  if (!route.path.startsWith(path)) void router.push(path);
+}
+
+function closeGroups() {
+  openGroup.value = null;
 }
 
 async function logout() {
@@ -40,8 +36,35 @@ async function logout() {
         <span>策略控制台</span>
       </div>
       <nav class="nav">
-        <div class="nav-group" :class="{ 'is-open': accountsOpen }">
-          <button class="nav-item" type="button" @click="toggleAccounts">
+        <p class="nav-title">概览</p>
+        <RouterLink to="/dashboard" class="nav-item" :class="{ 'is-on': route.path.startsWith('/dashboard') }" @click="closeGroups">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1.6" y="1.6" width="5.2" height="5.2" rx="1" stroke="currentColor" />
+            <rect x="9.2" y="1.6" width="5.2" height="5.2" rx="1" stroke="currentColor" />
+            <rect x="1.6" y="9.2" width="5.2" height="5.2" rx="1" stroke="currentColor" />
+            <rect x="9.2" y="9.2" width="5.2" height="5.2" rx="1" stroke="currentColor" />
+          </svg>
+          仪表盘
+        </RouterLink>
+        <p class="nav-title">运营</p>
+        <div class="nav-group" :class="{ 'is-open': openGroup === 'quant' }">
+          <button class="nav-item" type="button" @click="toggleGroup('quant', '/quant')">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M1.8 11.5 5.6 7.6l2.3 2.2 5.3-6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M9.6 3.8h3.6V7.4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            量化交易
+            <svg class="nav-caret" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M4.2 2.4 7.8 6 4.2 9.6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <div v-show="openGroup === 'quant'" class="nav-sub">
+            <RouterLink to="/quant/crypto" class="nav-sub-item" :class="{ 'is-on': route.path.startsWith('/quant/crypto') }">数字货币</RouterLink>
+          </div>
+        </div>
+        <p class="nav-title">资源</p>
+        <div class="nav-group" :class="{ 'is-open': openGroup === 'accounts' }">
+          <button class="nav-item" type="button" @click="toggleGroup('accounts', '/accounts')">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect x="1.6" y="3.4" width="12.8" height="9.2" rx="1.4" stroke="currentColor" />
               <path d="M1.6 6.4h12.8" stroke="currentColor" />
@@ -51,12 +74,12 @@ async function logout() {
               <path d="M4.2 2.4 7.8 6 4.2 9.6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-          <div v-show="accountsOpen" class="nav-sub">
+          <div v-show="openGroup === 'accounts'" class="nav-sub">
             <RouterLink to="/accounts/crypto" class="nav-sub-item" :class="{ 'is-on': route.path.startsWith('/accounts/crypto') }">数字钱包</RouterLink>
             <RouterLink to="/accounts/cards" class="nav-sub-item" :class="{ 'is-on': route.path.startsWith('/accounts/cards') }">信用卡</RouterLink>
           </div>
         </div>
-        <RouterLink to="/servers" class="nav-item" :class="{ 'is-on': route.path.startsWith('/servers') || route.path.startsWith('/keys') }">
+        <RouterLink to="/servers" class="nav-item" :class="{ 'is-on': route.path.startsWith('/servers') || route.path.startsWith('/keys') }" @click="closeGroups">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <rect x="1.5" y="2.5" width="13" height="4" rx="1" stroke="currentColor" />
             <rect x="1.5" y="9.5" width="13" height="4" rx="1" stroke="currentColor" />
@@ -67,7 +90,7 @@ async function logout() {
         </RouterLink>
       </nav>
       <div class="nav-foot">
-        <RouterLink to="/settings" class="nav-item" :class="{ 'is-on': route.path.startsWith('/settings') }">
+        <RouterLink to="/settings" class="nav-item" :class="{ 'is-on': route.path.startsWith('/settings') }" @click="closeGroups">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <circle cx="8" cy="8" r="2" stroke="currentColor" />
             <path
@@ -82,7 +105,10 @@ async function logout() {
     </aside>
     <div class="workspace">
       <header class="topbar">
-        <nav v-if="route.path.startsWith('/settings')" class="tabs">
+        <nav v-if="route.path.startsWith('/dashboard')" class="tabs">
+          <RouterLink to="/dashboard" class="tab is-on">仪表盘</RouterLink>
+        </nav>
+        <nav v-else-if="route.path.startsWith('/settings')" class="tabs">
           <RouterLink to="/settings" class="tab" :class="{ 'is-on': route.path.startsWith('/settings') }">登录安全</RouterLink>
         </nav>
         <nav v-else-if="route.path.startsWith('/accounts/crypto')" class="tabs">
@@ -90,6 +116,12 @@ async function logout() {
         </nav>
         <nav v-else-if="route.path.startsWith('/accounts/cards')" class="tabs">
           <RouterLink to="/accounts/cards" class="tab is-on">虚拟信用卡</RouterLink>
+        </nav>
+        <nav v-else-if="route.path.startsWith('/quant/crypto')" class="tabs">
+          <RouterLink to="/quant/crypto" custom v-slot="{ href, navigate }">
+            <a :href="href" class="tab" :class="{ 'is-on': route.path === '/quant/crypto' }" @click="navigate">概览</a>
+          </RouterLink>
+          <RouterLink to="/quant/crypto/strategies" class="tab" :class="{ 'is-on': route.path.startsWith('/quant/crypto/strategies') }">交易策略</RouterLink>
         </nav>
         <nav v-else class="tabs">
           <RouterLink to="/servers" class="tab" :class="{ 'is-on': route.path.startsWith('/servers') }">服务器实例</RouterLink>

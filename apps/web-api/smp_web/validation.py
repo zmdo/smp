@@ -46,6 +46,22 @@ def clean_cvv(value: str) -> str:
     return cleaned
 
 
+def clean_text(value: str, label: str, limit: int, *, required: bool = True) -> str:
+    cleaned = " ".join(value.split())
+    if required and not cleaned:
+        raise FieldError(f"请填写{label}")
+    if len(cleaned) > limit:
+        raise FieldError(f"{label}最长 {limit} 个字符")
+    return cleaned
+
+
+def clean_postal_code(value: str) -> str:
+    cleaned = value.strip()
+    if not cleaned or len(cleaned) > 20:
+        raise FieldError("请填写邮编")
+    return cleaned
+
+
 def clean_holder(value: str) -> str:
     cleaned = " ".join(value.split())
     if not cleaned or len(cleaned) > 80:
