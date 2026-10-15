@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ApiError, api, type ServerDetail } from "../api";
+import { ApiError, api, type ServerDetail, type SshKey } from "../api";
 
 const route = useRoute();
 const router = useRouter();
@@ -13,12 +13,25 @@ const intranetHost = ref("");
 const sshPort = ref(22);
 const sshUser = ref("");
 const authMethod = ref<"private_key" | "password">("private_key");
+const keySource = ref<"existing" | "new">("new");
+const keys = ref<SshKey[]>([]);
+const selectedKeyId = ref("");
+const keyName = ref("");
 const secret = ref("");
 const error = ref("");
 const submitting = ref(false);
 
 onMounted(async () => {
-  if (!isEdit.value) return;
+  try {
+    keys.value = await api<SshKey[]>("/api/ssh-keys");
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : "密钥列表加载失败";
+  }
+  if (!isEdit.value) {
+    keySource.value = keys.value.length ? "existing" : "new";
+    selectedKeyId.value = keys.value[0]?.id || "";
+    return;
+  }
   try {
     const server = await api<ServerDetail>(`/api/servers/${serverId.value}`);
     name.value = server.name;
@@ -26,6 +39,10 @@ onMounted(async () => {
     sshPort.value = server.ssh_port;
     sshUser.value = server.ssh_user;
     authMethod.value = server.auth_method;
+    if (server.ssh_key_id) {
+      keySource.value = "existing";
+      selectedKeyId.value = server.ssh_key_id;
+    }
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : "加载失败";
   }
@@ -33,8 +50,21 @@ onMounted(async () => {
 
 async function submit() {
   error.value = "";
-  if (!isEdit.value && !secret.value.trim()) {
-    error.value = authMethod.value === "private_key" ? "请粘贴私钥" : "请填写口令";
+  if (authMethod.value === "password") {
+    if (!isEdit.value && !secret.value.trim()) {
+      error.value = "请填写口令";
+      return;
+    }
+  } else if (keySource.value === "existing") {
+    if (!selectedKeyId.value) {
+      error.value = "请选择一把密钥";
+      return;
+    }
+  } else if (!isEdit.value && !secret.value.trim()) {
+    error.value = "请粘贴私钥";
+    return;
+  } else if (secret.value.trim() && !keyName.value.trim()) {
+    error.value = "请填写密钥名称，保存后会出现在服务器密钥里";
     return;
   }
   submitting.value = true;
@@ -45,7 +75,14 @@ async function submit() {
     ssh_user: sshUser.value,
     auth_method: authMethod.value,
   };
-  if (secret.value) body.secret = secret.value;
+  if (authMethod.value === "password") {
+    if (secret.value) body.secret = secret.value;
+  } else if (keySource.value === "existing") {
+    body.ssh_key_id = selectedKeyId.value;
+  } else if (secret.value.trim()) {
+    body.secret = secret.value;
+    body.ssh_key_name = keyName.value;
+  }
   try {
     const path = isEdit.value ? `/api/servers/${serverId.value}` : "/api/servers";
     const method = isEdit.value ? "PATCH" : "POST";
@@ -77,13 +114,29 @@ async function submit() {
         <label>SSH 端口<input v-model.number="sshPort" type="number" min="1" max="65535" required /></label>
         <label>SSH 用户<input v-model="sshUser" required maxlength="64" /></label>
         <div class="choices">
-          <label><input v-model="authMethod" type="radio" value="private_key" />私钥</label>
+          <label><input v-model="authMethod" type="radio" value="private_key" />密钥</label>
           <label><input v-model="authMethod" type="radio" value="password" />口令</label>
         </div>
-        <label v-if="authMethod === 'private_key'">
-          私钥
-          <textarea v-model="secret" class="mono" spellcheck="false" :placeholder="isEdit ? '留空则不修改' : '粘贴 PEM 私钥'" />
-        </label>
+        <template v-if="authMethod === 'private_key'">
+          <div class="choices">
+            <label><input v-model="keySource" type="radio" value="existing" :disabled="keys.length === 0" />已有密钥</label>
+            <label><input v-model="keySource" type="radio" value="new" />填写密钥</label>
+          </div>
+          <label v-if="keySource === 'existing'">
+            密钥
+            <select v-model="selectedKeyId" required>
+              <option v-for="item in keys" :key="item.id" :value="item.id">{{ item.name }}</option>
+            </select>
+          </label>
+          <template v-else>
+            <label>密钥名称<input v-model="keyName" maxlength="80" placeholder="例如 机房跳板" /></label>
+            <label>
+              私钥
+              <textarea v-model="secret" class="mono" spellcheck="false" :placeholder="isEdit ? '留空则不修改当前密钥' : '粘贴 PEM 私钥'" />
+            </label>
+            <p class="muted">新粘贴的私钥会自动加入服务器密钥。同一把私钥不会重复保存。</p>
+          </template>
+        </template>
         <label v-else>
           口令
           <input v-model="secret" type="password" :placeholder="isEdit ? '留空则不修改' : ''" />

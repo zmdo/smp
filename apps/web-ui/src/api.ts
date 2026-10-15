@@ -37,6 +37,8 @@ export interface ServerSummary {
   ssh_port: number;
   ssh_user: string;
   auth_method: "private_key" | "password";
+  ssh_key_id: string | null;
+  ssh_key_name: string | null;
   host_key_fingerprint: string | null;
   docker_version: string | null;
   compose_version: string | null;

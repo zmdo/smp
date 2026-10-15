@@ -1,26 +1,12 @@
 from __future__ import annotations
 
-import bcrypt
 from fastapi import HTTPException, Request
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from smp_web.config import settings
+from smpcore.models import Account
 
-
-class PasswordChecker:
-    def __init__(self, password: str):
-        self._hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-        self.is_default = password == "changeme"
-
-    def verify(self, password: str) -> bool:
-        try:
-            return bcrypt.checkpw(password.encode(), self._hash)
-        except ValueError:
-            return False
-
-
-passwords = PasswordChecker(settings.admin_password)
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 engine = create_engine(settings.database_url, pool_pre_ping=True, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
@@ -34,9 +20,16 @@ def get_session():
         session.close()
 
 
-def require_user(request: Request) -> None:
-    if request.session.get("user") != "admin":
+def require_user(request: Request) -> str:
+    username = request.session.get("user")
+    if not isinstance(username, str) or not username:
         raise HTTPException(status_code=401, detail="未登录")
+    with SessionLocal() as session:
+        exists = session.scalar(select(Account.id).where(Account.username == username))
+    if exists is None:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="未登录")
+    return username
 
 
 def job_out(job) -> dict:
@@ -60,6 +53,8 @@ def server_out(server, container_count: int | None) -> dict:
         "ssh_port": server.ssh_port,
         "ssh_user": server.ssh_user,
         "auth_method": server.auth_method,
+        "ssh_key_id": server.ssh_key_id,
+        "ssh_key_name": server.ssh_key.name if server.ssh_key is not None else None,
         "host_key_fingerprint": server.host_key_fingerprint,
         "docker_version": server.docker_version,
         "compose_version": server.compose_version,

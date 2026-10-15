@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ops_url: str = "http://ops:8081"
     internal_token: str
     session_secret: str
+    admin_username: str = "admin"
     admin_password: str
 
 

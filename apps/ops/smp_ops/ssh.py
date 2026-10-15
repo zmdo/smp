@@ -68,12 +68,14 @@ def load_private_key(secret: str) -> paramiko.PKey:
     normalized = secret.replace("\r\n", "\n").replace("\r", "\n")
     if not normalized.endswith("\n"):
         normalized += "\n"
-    try:
-        return paramiko.PKey.from_private_key(io.StringIO(normalized))
-    except paramiko.PasswordRequiredException as exc:
-        raise OpsSSHError("私钥带有口令。请先去掉口令，再保存到控制台。") from exc
-    except paramiko.SSHException as exc:
-        raise OpsSSHError("私钥无法解析，请确认粘贴的是完整的私钥文件。") from exc
+    for key_class in (paramiko.Ed25519Key, paramiko.RSAKey, paramiko.ECDSAKey):
+        try:
+            return key_class.from_private_key(io.StringIO(normalized))
+        except paramiko.PasswordRequiredException as exc:
+            raise OpsSSHError("私钥带有口令。请先去掉口令，再保存到控制台。") from exc
+        except (paramiko.SSHException, ValueError):
+            continue
+    raise OpsSSHError("私钥无法解析，请确认粘贴的是完整的私钥文件。")
 
 
 class _PinPolicy(paramiko.MissingHostKeyPolicy):

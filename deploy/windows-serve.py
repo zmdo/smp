@@ -8,7 +8,11 @@ open it. This process listens on 127.0.0.1:8080 directly.
 from __future__ import annotations
 
 import os
+import socket
+import subprocess
 import sys
+import time
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +26,7 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///{database.as_posix()}")
 os.environ.setdefault("OPS_URL", "http://127.0.0.1:8081")
 os.environ.setdefault("INTERNAL_TOKEN", "dev-internal-token")
 os.environ.setdefault("SESSION_SECRET", "dev-session-secret-change-me")
+os.environ.setdefault("ADMIN_USERNAME", "admin")
 os.environ.setdefault("ADMIN_PASSWORD", "changeme")
 
 from fastapi.responses import FileResponse  # noqa: E402

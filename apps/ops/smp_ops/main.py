@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from smp_ops.config import settings
 from smp_ops.crypto import encrypt, load_fernet
-from smp_ops.ssh import OpsSSHError, load_private_key
+from smp_ops.ssh import OpsSSHError, fingerprint_of, load_private_key
 from smp_ops.worker import build_session_factory, schedule_loop, worker_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -34,6 +34,7 @@ class EncryptIn(BaseModel):
 
 class EncryptOut(BaseModel):
     ciphertext: str
+    fingerprint: str | None = None
 
 
 @asynccontextmanager
@@ -68,16 +69,18 @@ def health() -> dict[str, str]:
 
 @app.post("/internal/secrets/encrypt", response_model=EncryptOut, dependencies=[Depends(require_token)])
 def encrypt_secret(body: EncryptIn) -> EncryptOut:
+    fingerprint = None
     if body.auth_method == "private_key":
         try:
-            load_private_key(body.plaintext.strip())
+            key = load_private_key(body.plaintext.strip())
         except OpsSSHError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         plaintext = body.plaintext.strip()
+        fingerprint = fingerprint_of(key)
     elif body.auth_method == "password":
         if not body.plaintext.strip():
             raise HTTPException(status_code=422, detail="口令不能为空")
         plaintext = body.plaintext
     else:
         raise HTTPException(status_code=422, detail="认证方式只能是私钥或口令")
-    return EncryptOut(ciphertext=encrypt(fernet, plaintext))
+    return EncryptOut(ciphertext=encrypt(fernet, plaintext), fingerprint=fingerprint)

@@ -20,7 +20,7 @@ async function logout() {
         <span>策略控制台</span>
       </div>
       <nav class="nav">
-        <RouterLink to="/servers" class="nav-item" :class="{ 'is-on': route.path.startsWith('/servers') }">
+        <RouterLink to="/servers" class="nav-item" :class="{ 'is-on': route.path.startsWith('/servers') || route.path.startsWith('/keys') }">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <rect x="1.5" y="2.5" width="13" height="4" rx="1" stroke="currentColor" />
             <rect x="1.5" y="9.5" width="13" height="4" rx="1" stroke="currentColor" />
@@ -29,12 +29,23 @@ async function logout() {
           </svg>
           服务器
         </RouterLink>
+        <RouterLink to="/account" class="nav-item" :class="{ 'is-on': route.path.startsWith('/account') }">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="5.5" r="2.2" stroke="currentColor" />
+            <path d="M3.2 13.2c.8-2.2 2.5-3.2 4.8-3.2s4 1 4.8 3.2" stroke="currentColor" stroke-linecap="round" />
+          </svg>
+          账户
+        </RouterLink>
       </nav>
     </aside>
     <div class="workspace">
       <header class="topbar">
-        <nav class="tabs">
-          <RouterLink to="/servers" class="tab" :class="{ 'is-on': route.path.startsWith('/servers') }">服务器</RouterLink>
+        <nav v-if="route.path.startsWith('/account')" class="tabs">
+          <RouterLink to="/account" class="tab" :class="{ 'is-on': route.path.startsWith('/account') }">登录安全</RouterLink>
+        </nav>
+        <nav v-else class="tabs">
+          <RouterLink to="/servers" class="tab" :class="{ 'is-on': route.path.startsWith('/servers') }">服务器实例</RouterLink>
+          <RouterLink to="/keys" class="tab" :class="{ 'is-on': route.path.startsWith('/keys') }">服务器密钥</RouterLink>
         </nav>
         <div class="top-actions">
           <button class="link" type="button" @click="logout">退出</button>
@@ -42,7 +53,7 @@ async function logout() {
       </header>
       <div class="content">
         <p v-if="auth.passwordIsDefault" class="banner">
-          当前仍是默认口令 changeme。正式接入服务器前，请修改 ADMIN_PASSWORD 并重启网站。
+          当前仍是默认账户 admin、密码 changeme。请到「账户 / 登录安全」里修改密码。
         </p>
         <RouterView />
       </div>

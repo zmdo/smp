@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from smp_web.deps import get_session, job_out, require_user, server_out
+from smp_web.key_store import require_key, store_private_key
 from smp_web.schemas import JobOut, ServerCreatedOut, ServerDetailOut, ServerIn, ServerOut, ServerUpdate
 from smp_web.secrets_client import encrypt_secret
 from smp_web.validation import FieldError, clean_host, clean_name, clean_port, clean_user

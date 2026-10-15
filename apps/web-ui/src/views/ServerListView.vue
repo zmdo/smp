@@ -38,7 +38,7 @@ function countText(server: ServerSummary): string {
   <p v-if="error" class="banner error">{{ error }}</p>
   <section class="panel">
     <header class="panel-head">
-      <h1><i class="mark"></i>服务器 <em class="count">{{ visible.length }}</em></h1>
+      <h1><i class="mark"></i>服务器实例 <em class="count">{{ visible.length }}</em></h1>
       <div class="tools">
         <input v-model="query" class="search" type="search" placeholder="搜索" />
         <RouterLink class="icon" to="/servers/new" title="登记服务器">+</RouterLink>

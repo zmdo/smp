@@ -28,6 +28,21 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class SshKey(Base):
+    __tablename__ = "ssh_keys"
+    __table_args__ = (UniqueConstraint("fingerprint", name="uq_ssh_keys_fingerprint"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+    servers: Mapped[list[Server]] = relationship(back_populates="ssh_key")
+
+
 class Server(Base):
     __tablename__ = "servers"
     __table_args__ = (
@@ -49,6 +64,9 @@ class Server(Base):
     ssh_user: Mapped[str] = mapped_column(String(64), nullable=False)
     auth_method: Mapped[str] = mapped_column(String(32), nullable=False)
     secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    ssh_key_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("ssh_keys.id", ondelete="RESTRICT"), index=True
+    )
     host_key_fingerprint: Mapped[str | None] = mapped_column(String(128))
     docker_version: Mapped[str | None] = mapped_column(String(64))
     compose_version: Mapped[str | None] = mapped_column(String(64))
@@ -64,6 +82,7 @@ class Server(Base):
     containers: Mapped[list[ServerContainer]] = relationship(
         back_populates="server", cascade="all, delete-orphan"
     )
+    ssh_key: Mapped[SshKey | None] = relationship(back_populates="servers")
     jobs: Mapped[list[OpsJob]] = relationship(back_populates="server", cascade="all, delete-orphan")
 
 
@@ -117,3 +136,18 @@ class OpsJob(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     server: Mapped[Server] = relationship(back_populates="jobs")
+
+
+class Account(Base):
+    __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("username", name="uq_accounts_username"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username: Mapped[str] = mapped_column(String(64), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    totp_secret: Mapped[str | None] = mapped_column(String(64))
+    totp_pending_secret: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )

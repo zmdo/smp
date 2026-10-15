@@ -234,7 +234,22 @@ K 线不在第一版。
 | `ssh_port` | SSH 端口，默认 22 |
 | `ssh_user` | SSH 用户 |
 | `auth_method` | `private_key` 或 `password` |
-| `secret_ciphertext` | 私钥或口令的密文 |
+| `secret_ciphertext` | 口令的密文。使用密钥登录时为空，私钥放在 `ssh_keys` |
+| `ssh_key_id` | 登录用的 SSH 密钥。口令登录时为空 |
+
+### 7.1.1 `ssh_keys`
+
+控制台里的密钥清单。同一把私钥只存一份，多台服务器可以共用。
+
+| 字段 | 说明 |
+| --- | --- |
+| `id` | UUID |
+| `name` | 展示名称 |
+| `fingerprint` | 私钥对应公钥的 SHA256 指纹，用来识别是不是同一把钥匙 |
+| `secret_ciphertext` | 私钥密文。接口不返回原文 |
+| `created_at` | 写入时间 |
+
+登记服务器并选择密钥时，可以选清单里已有的一把，也可以粘贴新私钥。粘贴的新私钥会写入这张表；如果指纹已经存在，就直接复用那一条。
 | `host_key_fingerprint` | 测试连接后钉住的主机密钥指纹 |
 | `docker_version` / `compose_version` | 最近一次检查到的版本，空表示尚未通过检查 |
 | `reachability` | `online` / `offline` / `docker_unavailable` / `unknown` |
@@ -342,7 +357,7 @@ K 线不在第一版。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `POST` | `/api/auth/login` | 个人口令，设置 HttpOnly 会话 Cookie |
+| `POST` | `/api/auth/login` | 账户、密码，开启两步验证时再提交验证码。通过后设置 HttpOnly 会话 Cookie |
 | `POST` | `/api/auth/logout` | 清除会话 |
 | `GET` | `/api/strategies` | 策略列表：心跳、今日收益、累计收益、未平仓数、部署状态、所在服务器 |
 | `GET` | `/api/strategies/{id}` | 策略摘要 |
@@ -378,7 +393,7 @@ K 线不在第一版。
 
 ### 9.1 登录
 
-单口令，存在网站后台环境变量中的哈希。无注册和多用户。
+使用账户和密码。每个账户可以自行开启或关闭两步验证（TOTP）。第一次启动时，若库里还没有账户，用环境变量 `ADMIN_USERNAME`（默认 `admin`）和 `ADMIN_PASSWORD` 创建。两步验证的密钥只在开启时展示一次，页面用这个密钥在本地生成二维码，确认验证码后才生效。
 
 ### 9.2 总览 `/`
 
@@ -433,7 +448,8 @@ K 线不在第一版。
 | 主机密钥指纹 | `servers.host_key_fingerprint` |
 | 交易所 API Key | PostgreSQL 密文；部署时写入远端 `.env`，权限 `600` |
 | Freqtrade API 口令 | PostgreSQL 密文；采集服务和远端容器使用 |
-| 网站登录口令、数据库口令、字段加密主密钥 | 仅控制机环境变量 |
+| 网站账户密码和两步验证密钥 | PostgreSQL。第一次启动用环境变量创建默认账户，之后在「登录安全」里修改 |
+| 数据库口令、字段加密主密钥 | 仅控制机环境变量 |
 
 主密钥不进库。丢失主密钥则已存的 SSH 和交易所密文无法解密，需要重新填写。
 

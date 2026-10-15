@@ -8,12 +8,53 @@ from pydantic import BaseModel, Field
 
 
 class LoginIn(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
     password: str = Field(min_length=1)
+    totp_code: str | None = None
+
+
+class LoginOut(BaseModel):
+    ok: bool
+    totp_required: bool = False
 
 
 class MeOut(BaseModel):
     authenticated: bool
+    username: str | None = None
     password_is_default: bool
+    totp_enabled: bool = False
+
+
+class TotpSetupOut(BaseModel):
+    secret: str
+    otpauth_uri: str
+
+
+class TotpCodeIn(BaseModel):
+    code: str = Field(min_length=1)
+
+
+class TotpDisableIn(BaseModel):
+    password: str = Field(min_length=1)
+    code: str = Field(min_length=1)
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=1, max_length=72)
+
+
+class SshKeyIn(BaseModel):
+    name: str
+    secret: str = Field(min_length=1)
+
+
+class SshKeyOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    fingerprint: str
+    server_count: int
+    created_at: datetime
 
 
 class ServerIn(BaseModel):
@@ -22,7 +63,9 @@ class ServerIn(BaseModel):
     ssh_port: int = 22
     ssh_user: str
     auth_method: Literal["private_key", "password"]
-    secret: str = Field(min_length=1)
+    secret: str | None = None
+    ssh_key_id: uuid.UUID | None = None
+    ssh_key_name: str | None = None
 
 
 class ServerUpdate(BaseModel):
@@ -32,6 +75,8 @@ class ServerUpdate(BaseModel):
     ssh_user: str | None = None
     auth_method: Literal["private_key", "password"] | None = None
     secret: str | None = None
+    ssh_key_id: uuid.UUID | None = None
+    ssh_key_name: str | None = None
 
 
 class ServerOut(BaseModel):
@@ -41,6 +86,8 @@ class ServerOut(BaseModel):
     ssh_port: int
     ssh_user: str
     auth_method: Literal["private_key", "password"]
+    ssh_key_id: uuid.UUID | None
+    ssh_key_name: str | None
     host_key_fingerprint: str | None
     docker_version: str | None
     compose_version: str | None

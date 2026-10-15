@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuth } from "./stores/auth";
+import AccountView from "./views/AccountView.vue";
+import KeyListView from "./views/KeyListView.vue";
 import LoginView from "./views/LoginView.vue";
 import ServerDetailView from "./views/ServerDetailView.vue";
 import ServerFormView from "./views/ServerFormView.vue";
@@ -14,6 +16,8 @@ export const router = createRouter({
     { path: "/servers/new", name: "server-new", component: ServerFormView },
     { path: "/servers/:id/edit", name: "server-edit", component: ServerFormView },
     { path: "/servers/:id", name: "server-detail", component: ServerDetailView },
+    { path: "/keys", name: "keys", component: KeyListView },
+    { path: "/account", name: "account", component: AccountView },
   ],
 });
 

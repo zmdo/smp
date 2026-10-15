@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from smp_web.config import settings
 
 
-def encrypt_secret(plaintext: str, auth_method: str) -> str:
+def encrypt_secret(plaintext: str, auth_method: str) -> tuple[str, str | None]:
     try:
         response = httpx.post(
             f"{settings.ops_url.rstrip('/')}/internal/secrets/encrypt",
@@ -15,7 +15,7 @@ def encrypt_secret(plaintext: str, auth_method: str) -> str:
             timeout=10,
         )
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=503, detail="运维服务不可用，没有保存这台服务器") from exc
+        raise HTTPException(status_code=503, detail="运维服务不可用，没有保存") from exc
     if response.status_code >= 400:
         detail = "密钥无效"
         if "application/json" in response.headers.get("content-type", ""):
@@ -23,7 +23,11 @@ def encrypt_secret(plaintext: str, auth_method: str) -> str:
             if isinstance(payload, str):
                 detail = payload
         raise HTTPException(status_code=422, detail=detail)
-    ciphertext = response.json().get("ciphertext")
+    body = response.json()
+    ciphertext = body.get("ciphertext")
+    fingerprint = body.get("fingerprint")
     if not isinstance(ciphertext, str) or not ciphertext:
         raise HTTPException(status_code=503, detail="运维服务没有返回加密结果")
-    return ciphertext
+    if auth_method == "private_key" and not isinstance(fingerprint, str):
+        raise HTTPException(status_code=503, detail="运维服务没有返回密钥指纹")
+    return ciphertext, fingerprint if isinstance(fingerprint, str) else None

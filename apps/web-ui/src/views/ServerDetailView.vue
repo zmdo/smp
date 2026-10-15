@@ -106,6 +106,7 @@ const showContainers = computed(() => {
       </div>
       <p class="sub mono">{{ server.ssh_user }}@{{ server.intranet_host }}:{{ server.ssh_port }}</p>
       <div class="node-grid">
+        <div><span>登录</span>{{ server.auth_method === "private_key" ? (server.ssh_key_name || "密钥") : "口令" }}</div>
         <div><span>Docker</span>{{ server.docker_version || "—" }}</div>
         <div><span>Compose</span>{{ server.compose_version || "—" }}</div>
         <div><span>容器</span>{{ server.container_count === null ? "—" : server.container_count }}</div>

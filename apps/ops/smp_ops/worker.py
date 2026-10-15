@@ -22,15 +22,22 @@ from smp_ops.ssh import (
     inspect_containers,
     probe,
 )
-from smpcore.models import OpsJob, Server, ServerContainer
+from smpcore.models import OpsJob, Server, ServerContainer, SshKey
 
 log = logging.getLogger("smp.ops")
 
 _STALE_AFTER = timedelta(minutes=3)
+_claim_lock = threading.Lock()
 
 
 def build_session_factory(database_url: str) -> sessionmaker[Session]:
-    engine = create_engine(database_url, pool_pre_ping=True, pool_size=10, max_overflow=5)
+    kwargs: dict = {"pool_pre_ping": True}
+    if database_url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+    else:
+        kwargs["pool_size"] = 10
+        kwargs["max_overflow"] = 5
+    engine = create_engine(database_url, **kwargs)
     return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
@@ -61,8 +68,17 @@ def schedule_loop(
         stop.wait(5)
 
 
+def _ciphertext(session: Session, server: Server) -> str:
+    if server.auth_method == "private_key" and server.ssh_key_id is not None:
+        key = session.get(SshKey, server.ssh_key_id)
+        if key is None:
+            raise ValueError("登录密钥不存在")
+        return key.secret_ciphertext
+    return server.secret_ciphertext
+
+
 def claim_job(sessions: sessionmaker[Session]) -> uuid.UUID | None:
-    with sessions() as session:
+    with _claim_lock, sessions() as session:
         running_servers = select(OpsJob.server_id).where(OpsJob.status == "running")
         statement = (
             select(OpsJob)
@@ -93,7 +109,7 @@ def execute_job(sessions: sessionmaker[Session], fernet: Fernet, job_id: uuid.UU
             session.commit()
             return
         try:
-            secret = decrypt(fernet, server.secret_ciphertext)
+            secret = decrypt(fernet, _ciphertext(session, server))
         except ValueError as exc:
             server.reachability = "offline"
             _finish(session, job, "failed", str(exc))
