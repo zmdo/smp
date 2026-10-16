@@ -49,3 +49,26 @@ def decrypt_secret(ciphertext: str) -> str:
     if not isinstance(plaintext, str):
         raise HTTPException(status_code=503, detail="运维服务没有返回解密结果")
     return plaintext
+
+
+def test_ssh(host: str, port: int, username: str, auth_method: str, ciphertext: str) -> dict[str, object]:
+    try:
+        response = httpx.post(
+            f"{settings.ops_url.rstrip('/')}/internal/ssh/test",
+            json={
+                "host": host,
+                "port": port,
+                "username": username,
+                "auth_method": auth_method,
+                "ciphertext": ciphertext,
+            },
+            headers={"X-Internal-Token": settings.internal_token},
+            timeout=30,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=503, detail="运维服务不可用") from exc
+    if response.status_code >= 400:
+        raise HTTPException(status_code=503, detail="运维服务不可用")
+    body = response.json()
+    message = body.get("message")
+    return {"ok": bool(body.get("ok")), "message": message if isinstance(message, str) else "连接测试失败"}

@@ -294,6 +294,14 @@ input:focus, textarea:focus, select:focus, .search:focus {
   box-shadow: 0 0 0 2px rgba(0, 94, 235, 0.12);
 }
 
+button.secondary {
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: var(--text);
+  padding: 0 14px;
+}
 button.primary, a.primary, button.icon, a.icon {
   height: 32px;
   border-radius: 4px;

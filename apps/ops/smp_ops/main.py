@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from smp_ops.config import settings
 from smp_ops.crypto import decrypt, encrypt, load_fernet
 from smp_ops.metrics import metrics_loop
-from smp_ops.ssh import OpsSSHError, fingerprint_of, load_private_key
+from smp_ops.ssh import OpsSSHError, fingerprint_of, load_private_key, preview_login
 from smp_ops.terminal import serve_terminal
 from smp_ops.worker import build_session_factory, schedule_loop, worker_loop
 from smpcore.ensure import ensure_runtime_schema
@@ -46,6 +46,19 @@ class DecryptIn(BaseModel):
 
 class DecryptOut(BaseModel):
     plaintext: str
+
+
+class SshTestIn(BaseModel):
+    host: str
+    port: int
+    username: str
+    auth_method: str
+    ciphertext: str = Field(min_length=1)
+
+
+class SshTestOut(BaseModel):
+    ok: bool
+    message: str
 
 
 @asynccontextmanager
@@ -104,6 +117,25 @@ def encrypt_secret(body: EncryptIn) -> EncryptOut:
     else:
         raise HTTPException(status_code=422, detail="认证方式只能是私钥或口令")
     return EncryptOut(ciphertext=encrypt(fernet, plaintext), fingerprint=fingerprint)
+
+
+@app.post("/internal/ssh/test", response_model=SshTestOut, dependencies=[Depends(require_token)])
+def test_ssh(body: SshTestIn) -> SshTestOut:
+    try:
+        secret = decrypt(fernet, body.ciphertext)
+        message = preview_login(
+            host=body.host,
+            port=body.port,
+            username=body.username,
+            auth_method=body.auth_method,
+            secret=secret,
+        )
+    except OpsSSHError as exc:
+        return SshTestOut(ok=False, message=str(exc))
+    except Exception:
+        log.exception("ssh preview failed")
+        return SshTestOut(ok=False, message="连接测试失败")
+    return SshTestOut(ok=True, message=message)
 
 
 @app.websocket("/internal/terminal/{server_id}")

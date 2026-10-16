@@ -112,6 +112,20 @@ class ServerIn(BaseModel):
     component_ids: list[str] = Field(default_factory=list)
 
 
+class ServerTestIn(BaseModel):
+    intranet_host: str
+    ssh_port: int = 22
+    ssh_user: str
+    auth_method: Literal["private_key", "password"]
+    secret: str | None = None
+    ssh_key_id: uuid.UUID | None = None
+
+
+class ServerTestOut(BaseModel):
+    ok: bool
+    message: str
+
+
 class ServerUpdate(BaseModel):
     name: str | None = None
     intranet_host: str | None = None

@@ -158,6 +158,36 @@ def probe(client: paramiko.SSHClient, fingerprint: str) -> ProbeResult:
     )
 
 
+def preview_login(
+    *,
+    host: str,
+    port: int,
+    username: str,
+    auth_method: str,
+    secret: str,
+) -> str:
+    """Confirm SSH login without saving a server. Docker is reported, not required."""
+    client, policy = connect(
+        host=host,
+        port=port,
+        username=username,
+        auth_method=auth_method,
+        secret=secret,
+        expected_fingerprint=None,
+    )
+    try:
+        seen = policy.seen
+        if not seen:
+            raise OpsSSHError("没有读到主机密钥指纹")
+        try:
+            docker_version, compose_version = read_versions(client, seen)
+        except OpsSSHError as exc:
+            return f"SSH 已连通。{exc}"
+        return f"SSH 已连通。Docker {docker_version}，Compose {compose_version}。"
+    finally:
+        client.close()
+
+
 def inspect_containers(client: paramiko.SSHClient, fingerprint: str) -> InspectResult:
     docker_version, compose_version = read_versions(client, fingerprint)
     listed = run_command(client, DOCKER_PS)

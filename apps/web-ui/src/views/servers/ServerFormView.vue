@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ApiError, api, type ComponentInfo, type ServerDetail, type SshKey } from "../../api";
 
@@ -22,7 +22,30 @@ const autoInstall = ref(false);
 const components = ref<ComponentInfo[]>([]);
 const selectedComponents = ref<string[]>([]);
 const error = ref("");
+const notice = ref("");
 const submitting = ref(false);
+const testing = ref(false);
+const testedSignature = ref("");
+
+const connectionSignature = computed(() =>
+  JSON.stringify({
+    host: intranetHost.value.trim(),
+    port: Number(sshPort.value),
+    user: sshUser.value.trim(),
+    auth: authMethod.value,
+    keySource: keySource.value,
+    keyId: selectedKeyId.value,
+    secret: secret.value,
+  }),
+);
+const canSave = computed(
+  () => isEdit.value || (testedSignature.value !== "" && testedSignature.value === connectionSignature.value),
+);
+
+watch(connectionSignature, () => {
+  testedSignature.value = "";
+  notice.value = "";
+});
 
 onMounted(async () => {
   try {
@@ -62,8 +85,71 @@ function fillComponents() {
   }
 }
 
+function authProblem(): string {
+  if (!intranetHost.value.trim() || !sshUser.value.trim()) return "请填写地址和 SSH 用户";
+  if (authMethod.value === "password") {
+    if (!secret.value.trim()) return "请填写口令";
+    return "";
+  }
+  if (keySource.value === "existing") {
+    if (!selectedKeyId.value) return "请选择一把密钥";
+    return "";
+  }
+  if (!secret.value.trim()) return "请粘贴私钥";
+  return "";
+}
+
+function connectionBody(): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    intranet_host: intranetHost.value,
+    ssh_port: Number(sshPort.value),
+    ssh_user: sshUser.value,
+    auth_method: authMethod.value,
+  };
+  if (authMethod.value === "password" || keySource.value === "new") body.secret = secret.value;
+  else body.ssh_key_id = selectedKeyId.value;
+  return body;
+}
+
+async function testConnection() {
+  error.value = "";
+  notice.value = "";
+  const problem = authProblem();
+  if (problem) {
+    error.value = problem;
+    testedSignature.value = "";
+    return;
+  }
+  const signature = connectionSignature.value;
+  testing.value = true;
+  testedSignature.value = "";
+  try {
+    const result = await api<{ ok: boolean; message: string }>("/api/servers/test-connection", {
+      method: "POST",
+      body: JSON.stringify(connectionBody()),
+    });
+    if (connectionSignature.value !== signature) return;
+    if (result.ok) {
+      testedSignature.value = signature;
+      notice.value = result.message;
+    } else {
+      error.value = result.message;
+    }
+  } catch (err) {
+    if (connectionSignature.value === signature) {
+      error.value = err instanceof ApiError ? err.message : "连接测试失败";
+    }
+  } finally {
+    testing.value = false;
+  }
+}
+
 async function submit() {
   error.value = "";
+  if (!isEdit.value && !canSave.value) {
+    error.value = "请先测试连接";
+    return;
+  }
   if (authMethod.value === "password") {
     if (!isEdit.value && !secret.value.trim()) {
       error.value = "请填写口令";
@@ -130,6 +216,7 @@ async function submit() {
       <p class="muted" style="margin-top: 0">通过 SSH 连接这台机器，公网或内网地址都可以。需要 Docker 时可以在下面勾选自动安装，也可以连上之后再装。</p>
       <form class="panel-form" @submit.prevent="submit">
         <p v-if="error" class="banner error">{{ error }}</p>
+        <p v-if="notice" class="banner ok">{{ notice }}</p>
         <label>名称<input v-model="name" required maxlength="80" /></label>
         <label>地址<input v-model="intranetHost" required placeholder="10.0.0.8 或 trade.example.com" /></label>
         <label>SSH 端口<input v-model.number="sshPort" type="number" min="1" max="65535" required /></label>
@@ -177,9 +264,13 @@ async function submit() {
           <p v-if="components.length === 0" class="muted">没有可安装的组件。</p>
         </div>
         <div class="row">
-          <button class="primary" type="submit" :disabled="submitting">{{ isEdit ? "保存" : "保存并测试连接" }}</button>
+          <button v-if="!isEdit" class="secondary" type="button" :disabled="testing || submitting" @click="testConnection">
+            {{ testing ? "测试中" : "测试连接" }}
+          </button>
+          <button class="primary" type="submit" :disabled="submitting || testing || !canSave">保存</button>
           <RouterLink class="link" :to="isEdit ? `/servers/${serverId}` : '/servers'">取消</RouterLink>
         </div>
+        <p v-if="!isEdit" class="muted">先测试连接，通过后才能保存。</p>
       </form>
     </div>
   </section>

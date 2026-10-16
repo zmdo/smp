@@ -11,8 +11,17 @@ from sqlalchemy.orm import Session
 from smp_web.deps import get_session, job_out, require_user, server_out
 from smp_web.key_store import require_key, store_private_key
 from smp_web.region import lookup_region
-from smp_web.schemas import JobOut, ServerCreatedOut, ServerDetailOut, ServerIn, ServerOut, ServerUpdate
-from smp_web.secrets_client import encrypt_secret
+from smp_web.schemas import (
+    JobOut,
+    ServerCreatedOut,
+    ServerDetailOut,
+    ServerIn,
+    ServerOut,
+    ServerTestIn,
+    ServerTestOut,
+    ServerUpdate,
+)
+from smp_web.secrets_client import encrypt_secret, test_ssh
 from smp_web.validation import FieldError, clean_host, clean_name, clean_port, clean_user
 from smpcore.components import normalize_selection
 from smpcore.models import OpsJob, Server, ServerContainer
@@ -73,6 +82,17 @@ def list_servers(session: Session = Depends(get_session)) -> list[dict]:
         server_out(server, None if inspected is None else int(count or 0))
         for server, count, inspected in rows
     ]
+
+
+@router.post("/test-connection", response_model=ServerTestOut)
+def test_connection(body: ServerTestIn, session: Session = Depends(get_session)) -> dict:
+    try:
+        host = clean_host(body.intranet_host)
+        user = clean_user(body.ssh_user)
+        port = clean_port(body.ssh_port)
+    except FieldError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return test_ssh(host, port, user, body.auth_method, _test_ciphertext(session, body))
 
 
 @router.post("", response_model=ServerCreatedOut, status_code=201)
@@ -209,6 +229,20 @@ def install_components(server_id: str, session: Session = Depends(get_session)) 
 def list_containers(server_id: str, session: Session = Depends(get_session)) -> dict:
     detail = get_server(server_id, session)
     return {"containers": detail["containers"], "container_count": detail["container_count"]}
+
+
+def _test_ciphertext(session: Session, body: ServerTestIn) -> str:
+    if body.auth_method == "private_key":
+        if body.ssh_key_id is not None:
+            return require_key(session, body.ssh_key_id).secret_ciphertext
+        if body.secret and body.secret.strip():
+            ciphertext, _fingerprint = encrypt_secret(body.secret, "private_key")
+            return ciphertext
+        raise HTTPException(status_code=422, detail="请选择或粘贴私钥")
+    if not body.secret or not body.secret.strip():
+        raise HTTPException(status_code=422, detail="请填写口令")
+    ciphertext, _fingerprint = encrypt_secret(body.secret, "password")
+    return ciphertext
 
 
 def _bind_auth(session: Session, server: Server, body: ServerIn | ServerUpdate, *, creating: bool) -> bool:
