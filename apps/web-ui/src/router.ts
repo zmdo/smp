@@ -6,6 +6,7 @@ import CryptoAccountView from "./views/CryptoAccountView.vue";
 import DashboardView from "./views/DashboardView.vue";
 import KeyListView from "./views/KeyListView.vue";
 import LoginView from "./views/LoginView.vue";
+import McpSettingsView from "./views/McpSettingsView.vue";
 import QuantOverviewView from "./views/QuantOverviewView.vue";
 import QuantStrategyView from "./views/QuantStrategyView.vue";
 import ServerDetailView from "./views/ServerDetailView.vue";
@@ -26,6 +27,7 @@ export const router = createRouter({
     { path: "/keys", name: "keys", component: KeyListView },
     { path: "/account", redirect: "/settings" },
     { path: "/settings", name: "settings", component: AccountView },
+    { path: "/settings/mcp", name: "settings-mcp", component: McpSettingsView },
     { path: "/accounts/crypto", name: "crypto-accounts", component: CryptoAccountView },
     { path: "/accounts/crypto/:id", name: "crypto-wallet", component: WalletDetailView },
     { path: "/accounts/cards", name: "card-accounts", component: CardAccountView },

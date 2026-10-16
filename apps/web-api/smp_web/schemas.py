@@ -204,3 +204,24 @@ class WalletDetailOut(WalletOut):
 
 class WalletCreatedOut(WalletOut):
     mnemonic: str | None = None
+
+
+class McpSettingsOut(BaseModel):
+    enabled: bool
+    has_token: bool
+    token_last4: str | None
+    expose_servers: bool
+    expose_wallets: bool
+    expose_cards: bool
+
+
+class McpSettingsIn(BaseModel):
+    enabled: bool
+    expose_servers: bool
+    expose_wallets: bool
+    expose_cards: bool
+
+
+class McpTokenOut(BaseModel):
+    token: str
+    token_last4: str

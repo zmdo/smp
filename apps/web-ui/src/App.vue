@@ -109,7 +109,10 @@ async function logout() {
           <RouterLink to="/dashboard" class="tab is-on">仪表盘</RouterLink>
         </nav>
         <nav v-else-if="route.path.startsWith('/settings')" class="tabs">
-          <RouterLink to="/settings" class="tab" :class="{ 'is-on': route.path.startsWith('/settings') }">登录安全</RouterLink>
+          <RouterLink to="/settings" custom v-slot="{ href, navigate }">
+            <a :href="href" class="tab" :class="{ 'is-on': route.path === '/settings' }" @click="navigate">登录安全</a>
+          </RouterLink>
+          <RouterLink to="/settings/mcp" class="tab" :class="{ 'is-on': route.path.startsWith('/settings/mcp') }">MCP</RouterLink>
         </nav>
         <nav v-else-if="route.path.startsWith('/accounts/crypto')" class="tabs">
           <RouterLink to="/accounts/crypto" class="tab is-on">钱包实例</RouterLink>

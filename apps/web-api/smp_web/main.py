@@ -8,13 +8,14 @@ from smp_web.accounts import ensure_default_account
 from smp_web.routers.cards import ensure_virtual_card_columns
 from smp_web.config import settings
 from smp_web.deps import SessionLocal
-from smp_web.routers import auth, cards, jobs, keys, servers, wallets
+from smp_web.routers import auth, cards, jobs, keys, mcp, servers, wallets
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     ensure_default_account()
     ensure_virtual_card_columns()
+    mcp.ensure_mcp_settings()
     yield
 
 
@@ -33,12 +34,13 @@ app.include_router(keys.router)
 app.include_router(cards.router)
 app.include_router(wallets.router)
 app.include_router(jobs.router)
+app.include_router(mcp.router)
 
 
 @app.middleware("http")
 async def no_store_api(request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith("/api"):
+    if request.url.path.startswith("/api") or request.url.path == "/mcp":
         response.headers["Cache-Control"] = "no-store"
     return response
 

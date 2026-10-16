@@ -241,3 +241,20 @@ class Account(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
     )
+
+
+class McpSettings(Base):
+    """Single row (id = 1) that controls the console's own MCP endpoint."""
+
+    __tablename__ = "mcp_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    token_hash: Mapped[str | None] = mapped_column(String(64))
+    token_last4: Mapped[str | None] = mapped_column(String(8))
+    expose_servers: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    expose_wallets: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    expose_cards: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )

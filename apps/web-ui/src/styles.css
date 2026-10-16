@@ -336,6 +336,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
 form.panel-form { display: grid; gap: 14px; max-width: 980px; }
+form.panel-form > button.primary { justify-self: start; }
 form.panel-form .triple {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -418,6 +419,23 @@ form.panel-form .triple .state-proxy {
 }
 img.qr { width: 196px; height: 196px; background: #fff; border: 1px solid #e4e7ed; border-radius: 4px; }
 form.panel-form label, .login-card label { display: grid; gap: 6px; color: #606266; }
+form.panel-form label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+pre.config {
+  margin: 12px 0 0;
+  padding: 12px;
+  background: #f7f8fa;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: auto;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .choices { display: flex; gap: 20px; }
 form.panel-form .choices label {
   display: flex;
