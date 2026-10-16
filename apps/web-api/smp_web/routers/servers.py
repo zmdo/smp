@@ -54,17 +54,17 @@ def create_server(body: ServerIn, session: Session = Depends(get_session)) -> di
         port = clean_port(body.ssh_port)
     except FieldError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    ciphertext = encrypt_secret(body.secret, body.auth_method)
     server = Server(
         name=name,
         intranet_host=host,
         ssh_port=port,
         ssh_user=user,
         auth_method=body.auth_method,
-        secret_ciphertext=ciphertext,
+        secret_ciphertext="",
         reachability="unknown",
     )
     session.add(server)
+    _bind_auth(session, server, body, creating=True)
     try:
         session.flush()
     except IntegrityError as exc:
@@ -117,12 +117,7 @@ def update_server(server_id: str, body: ServerUpdate, session: Session = Depends
         connection_changed = _apply_update(server, body)
     except FieldError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    if body.secret:
-        method = body.auth_method or server.auth_method
-        server.secret_ciphertext = encrypt_secret(body.secret, method)
-        server.auth_method = method
-    elif body.auth_method and body.auth_method != server.auth_method:
-        raise HTTPException(status_code=422, detail="更换认证方式时需要重新填写私钥或口令")
+    connection_changed = _bind_auth(session, server, body, creating=False) or connection_changed
     if connection_changed:
         server.host_key_fingerprint = None
         server.reachability = "unknown"
@@ -130,7 +125,7 @@ def update_server(server_id: str, body: ServerUpdate, session: Session = Depends
         server.compose_version = None
         server.last_checked_at = None
         session.execute(delete(ServerContainer).where(ServerContainer.server_id == server.id))
-    job = _enqueue(session, server, "test_connection") if connection_changed or body.secret else None
+    job = _enqueue(session, server, "test_connection") if connection_changed else None
     try:
         session.commit()
     except IntegrityError as exc:
@@ -172,6 +167,36 @@ def inspect_server(server_id: str, session: Session = Depends(get_session)) -> d
 def list_containers(server_id: str, session: Session = Depends(get_session)) -> dict:
     detail = get_server(server_id, session)
     return {"containers": detail["containers"], "container_count": detail["container_count"]}
+
+
+def _bind_auth(session: Session, server: Server, body: ServerIn | ServerUpdate, *, creating: bool) -> bool:
+    method = body.auth_method or server.auth_method
+    if method == "private_key":
+        if body.ssh_key_id is not None:
+            key = require_key(session, body.ssh_key_id)
+        elif body.secret and body.secret.strip():
+            key = store_private_key(session, body.secret, body.ssh_key_name)
+        elif creating or (body.auth_method == "private_key" and server.auth_method != "private_key"):
+            raise HTTPException(status_code=422, detail="请选择或粘贴私钥")
+        else:
+            return False
+        changed = server.ssh_key_id != key.id or server.auth_method != "private_key"
+        server.auth_method = "private_key"
+        server.ssh_key_id = key.id
+        if not server.secret_ciphertext:
+            server.secret_ciphertext = ""
+        return changed
+    if method != "password":
+        raise HTTPException(status_code=422, detail="认证方式只能是私钥或口令")
+    if body.secret:
+        ciphertext, _fingerprint = encrypt_secret(body.secret, "password")
+        server.secret_ciphertext = ciphertext
+        server.auth_method = "password"
+        server.ssh_key_id = None
+        return True
+    if creating or (body.auth_method == "password" and server.auth_method != "password"):
+        raise HTTPException(status_code=422, detail="请填写口令")
+    return False
 
 
 def _apply_update(server: Server, body: ServerUpdate) -> bool:
