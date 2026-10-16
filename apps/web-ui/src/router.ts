@@ -11,6 +11,7 @@ import QuantStrategyView from "./views/QuantStrategyView.vue";
 import ServerDetailView from "./views/ServerDetailView.vue";
 import ServerFormView from "./views/ServerFormView.vue";
 import ServerListView from "./views/ServerListView.vue";
+import WalletDetailView from "./views/WalletDetailView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -26,6 +27,7 @@ export const router = createRouter({
     { path: "/account", redirect: "/settings" },
     { path: "/settings", name: "settings", component: AccountView },
     { path: "/accounts/crypto", name: "crypto-accounts", component: CryptoAccountView },
+    { path: "/accounts/crypto/:id", name: "crypto-wallet", component: WalletDetailView },
     { path: "/accounts/cards", name: "card-accounts", component: CardAccountView },
     { path: "/quant/crypto", name: "quant-overview", component: QuantOverviewView },
     { path: "/quant/crypto/strategies", name: "quant-strategies", component: QuantStrategyView },

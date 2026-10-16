@@ -7,4 +7,4 @@
 | [metamask.md](metamask.md) | MetaMask 怎么生成、保存、派生账户，以及它对外有哪些开发接口 |
 | [libraries.md](libraries.md) | 候选开发库的维护、审计和供应链结论，以及明确不采用的库 |
 
-开发方案在 [docs/design/web3-wallet/design.md](../docs/design/web3-wallet/design.md)。方案只采用这里通过审查的库。
+开发方案在 [docs/design/web3-wallet/design.md](../design/web3-wallet/design.md)。方案只采用这里通过审查的库。

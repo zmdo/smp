@@ -169,3 +169,38 @@ class ServerDetailOut(ServerOut):
 class ServerCreatedOut(BaseModel):
     server: ServerOut
     job: JobOut | None = None
+
+
+class WalletCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1)
+    mnemonic: str | None = None
+
+
+class WalletOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    created_at: datetime
+
+
+class WalletAddressOut(BaseModel):
+    chain: str
+    chain_label: str
+    address: str
+    derivation_path: str | None
+    source: Literal["derived", "manual"]
+
+
+class WalletAccountOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    derivation_index: int
+    addresses: list[WalletAddressOut]
+
+
+class WalletDetailOut(WalletOut):
+    accounts: list[WalletAccountOut]
+
+
+class WalletCreatedOut(WalletOut):
+    mnemonic: str | None = None

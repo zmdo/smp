@@ -2,7 +2,7 @@
 
 状态：待评审。本文只描述设计，不包含实现。
 
-调查记录在 [web3/metamask.md](../../../web3/metamask.md) 和 [web3/libraries.md](../../../web3/libraries.md)。库的取舍以那两份记录为准。
+调查记录在 [docs/web3/metamask.md](../../web3/metamask.md) 和 [docs/web3/libraries.md](../../web3/libraries.md)。库的取舍以那两份记录为准。
 
 ## 1. 背景
 
@@ -39,7 +39,7 @@ MetaMask 的做法是：一套助记词进密码加密的保险库，账户按 B
 | `@noble/curves` | 2.4.0 | Solana 的 ed25519 公钥 |
 | `@scure/base` | 2.4.0 | Base58、Base58Check、Bech32 |
 
-选择理由、审计时间和被排除的库见 [web3/libraries.md](../../../web3/libraries.md)。
+选择理由、审计时间和被排除的库见 [docs/web3/libraries.md](../../web3/libraries.md)。
 
 助记词加密在 `web-api`：
 

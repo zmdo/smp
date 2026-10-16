@@ -450,6 +450,31 @@ form.panel-form .choices label {
 .login-card label { display: grid; gap: 6px; margin-bottom: 14px; }
 .login-card button.primary { width: 100%; height: 36px; justify-content: center; }
 
+.mnemonic {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+.mnemonic li {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 8px 10px;
+}
+.mnemonic li span { color: var(--muted); margin-right: 8px; }
+.account-block { margin-top: 18px; }
+.account-block h2 { margin: 0 0 8px; font-size: 14px; }
+label.check { display: flex; align-items: center; gap: 8px; }
+form.panel-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
 @media (max-width: 860px) {
   .app { flex-direction: column; }
   .sider { width: 100%; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }

@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from smp_web.accounts import hash_password, verify_password
+from smp_web.vault import VaultError, reencrypt_all
 from smp_web.deps import get_session, require_user
 from smp_web.schemas import (
     LoginIn,
@@ -106,6 +107,11 @@ def change_password(
         raise HTTPException(status_code=422, detail="新密码最长 72 字节")
     if body.new_password == body.current_password:
         raise HTTPException(status_code=422, detail="新密码需要和当前密码不同")
+    try:
+        reencrypt_all(session, body.current_password, body.new_password)
+    except VaultError as exc:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="钱包无法用当前密码解密，密码没有修改") from exc
     account.password_hash = hash_password(body.new_password)
     session.commit()
     return {"ok": True}

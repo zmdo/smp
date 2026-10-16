@@ -161,6 +161,73 @@ class VirtualCard(Base):
     )
 
 
+class Wallet(Base):
+    __tablename__ = "wallets"
+    __table_args__ = (
+        UniqueConstraint("mnemonic_sha256", name="uq_wallets_mnemonic_sha256"),
+        CheckConstraint("word_count IN (12, 24)", name="ck_wallets_word_count"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    mnemonic_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    word_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+    accounts: Mapped[list[WalletAccount]] = relationship(
+        back_populates="wallet", cascade="all, delete-orphan"
+    )
+
+
+class WalletAccount(Base):
+    __tablename__ = "wallet_accounts"
+    __table_args__ = (UniqueConstraint("wallet_id", "derivation_index", name="uq_wallet_accounts_index"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    wallet_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    derivation_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+    wallet: Mapped[Wallet] = relationship(back_populates="accounts")
+    addresses: Mapped[list[WalletAddress]] = relationship(
+        back_populates="account", cascade="all, delete-orphan"
+    )
+
+
+class WalletAddress(Base):
+    __tablename__ = "wallet_addresses"
+    __table_args__ = (
+        UniqueConstraint("wallet_id", "chain", "address", name="uq_wallet_addresses_chain"),
+        CheckConstraint("source IN ('derived', 'manual')", name="ck_wallet_addresses_source"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    wallet_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    account_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("wallet_accounts.id", ondelete="CASCADE")
+    )
+    chain: Mapped[str] = mapped_column(String(32), nullable=False)
+    address: Mapped[str] = mapped_column(String(128), nullable=False)
+    derivation_path: Mapped[str | None] = mapped_column(String(80))
+    source: Mapped[str] = mapped_column(String(16), nullable=False)
+    label: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+    account: Mapped[WalletAccount | None] = relationship(back_populates="addresses")
+
+
 class Account(Base):
     __tablename__ = "accounts"
     __table_args__ = (UniqueConstraint("username", name="uq_accounts_username"),)

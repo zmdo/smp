@@ -64,6 +64,8 @@ services:
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
       SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      WALLET_DERIVER_NODE: /opt/node/bin/node
+      WALLET_DERIVER_SCRIPT: /opt/wallet-deriver/derive.mjs
     depends_on:
       migrate:
         condition: service_completed_successfully

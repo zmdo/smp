@@ -8,7 +8,7 @@ from smp_web.accounts import ensure_default_account
 from smp_web.routers.cards import ensure_virtual_card_columns
 from smp_web.config import settings
 from smp_web.deps import SessionLocal
-from smp_web.routers import auth, cards, jobs, keys, servers
+from smp_web.routers import auth, cards, jobs, keys, servers, wallets
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.include_router(auth.router)
 app.include_router(servers.router)
 app.include_router(keys.router)
 app.include_router(cards.router)
+app.include_router(wallets.router)
 app.include_router(jobs.router)
 
 
