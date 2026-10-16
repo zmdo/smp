@@ -72,3 +72,53 @@ def test_ssh(host: str, port: int, username: str, auth_method: str, ciphertext: 
     body = response.json()
     message = body.get("message")
     return {"ok": bool(body.get("ok")), "message": message if isinstance(message, str) else "连接测试失败"}
+
+
+def exchange_balances(venue: str, ciphertext: str) -> list[dict]:
+    try:
+        response = httpx.post(
+            f"{settings.ops_url.rstrip('/')}/internal/exchange/balances",
+            json={"venue": venue, "ciphertext": ciphertext},
+            headers={"X-Internal-Token": settings.internal_token},
+            timeout=40,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=503, detail="运维服务不可用") from exc
+    if response.status_code == 422:
+        detail = "查询余额失败"
+        if "application/json" in response.headers.get("content-type", ""):
+            payload = response.json().get("detail")
+            if isinstance(payload, str) and payload:
+                detail = payload
+        raise HTTPException(status_code=422, detail=detail)
+    if response.status_code >= 400:
+        raise HTTPException(status_code=503, detail="运维服务不可用")
+    balances = response.json().get("balances")
+    if not isinstance(balances, list):
+        raise HTTPException(status_code=503, detail="运维服务没有返回余额")
+    return [item for item in balances if isinstance(item, dict)]
+
+
+def market_quote(venue: str, symbol: str, timeframe: str) -> dict:
+    try:
+        response = httpx.post(
+            f"{settings.ops_url.rstrip('/')}/internal/markets/quote",
+            json={"venue": venue, "symbol": symbol, "timeframe": timeframe},
+            headers={"X-Internal-Token": settings.internal_token},
+            timeout=40,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=503, detail="运维服务不可用") from exc
+    if response.status_code == 422:
+        detail = "查询行情失败"
+        if "application/json" in response.headers.get("content-type", ""):
+            payload = response.json().get("detail")
+            if isinstance(payload, str) and payload:
+                detail = payload
+        raise HTTPException(status_code=422, detail=detail)
+    if response.status_code >= 400:
+        raise HTTPException(status_code=503, detail="运维服务不可用")
+    body = response.json()
+    if not isinstance(body, dict) or not isinstance(body.get("candles"), list):
+        raise HTTPException(status_code=503, detail="运维服务没有返回行情")
+    return body

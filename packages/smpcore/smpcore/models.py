@@ -257,6 +257,21 @@ class WalletAddress(Base):
     account: Mapped[WalletAccount | None] = relationship(back_populates="addresses")
 
 
+class ExchangeAccount(Base):
+    __tablename__ = "exchange_accounts"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    venue: Mapped[str] = mapped_column(String(32), nullable=False)
+    secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    balances: Mapped[str] = mapped_column(Text, nullable=False, default="[]", server_default="[]")
+    balance_error: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+
 class Account(Base):
     __tablename__ = "accounts"
     __table_args__ = (UniqueConstraint("username", name="uq_accounts_username"),)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import secrets
 import threading
@@ -136,6 +137,50 @@ def test_ssh(body: SshTestIn) -> SshTestOut:
         log.exception("ssh preview failed")
         return SshTestOut(ok=False, message="连接测试失败")
     return SshTestOut(ok=True, message=message)
+
+
+class ExchangeBalanceIn(BaseModel):
+    venue: str
+    ciphertext: str = Field(min_length=1)
+
+
+class ExchangeBalanceOut(BaseModel):
+    balances: list[dict]
+
+
+@app.post("/internal/exchange/balances", response_model=ExchangeBalanceOut, dependencies=[Depends(require_token)])
+def exchange_balances(body: ExchangeBalanceIn) -> ExchangeBalanceOut:
+    from smp_ops.exchanges import ExchangeError, fetch_balances
+
+    try:
+        raw = decrypt(fernet, body.ciphertext)
+        credentials = json.loads(raw)
+        if not isinstance(credentials, dict):
+            raise ExchangeError("API 凭证无效")
+        balances = fetch_balances(body.venue, credentials)
+    except ExchangeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail="API 凭证无效") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="无法解密") from exc
+    return ExchangeBalanceOut(balances=balances)
+
+
+class MarketQuoteIn(BaseModel):
+    venue: str
+    symbol: str
+    timeframe: str = "1h"
+
+
+@app.post("/internal/markets/quote", dependencies=[Depends(require_token)])
+def market_quote(body: MarketQuoteIn) -> dict:
+    from smp_ops.exchanges import ExchangeError, fetch_quote
+
+    try:
+        return fetch_quote(body.venue, body.symbol, body.timeframe)
+    except ExchangeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.websocket("/internal/terminal/{server_id}")

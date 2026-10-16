@@ -270,3 +270,64 @@ class McpSettingsIn(BaseModel):
 class McpTokenOut(BaseModel):
     token: str
     token_last4: str
+
+
+class ExchangeFieldOut(BaseModel):
+    key: str
+    label: str
+
+
+class ExchangeVenueOut(BaseModel):
+    id: str
+    name: str
+    wallet: str
+    fields: list[ExchangeFieldOut]
+
+
+class ExchangeIn(BaseModel):
+    name: str
+    venue: str
+    credentials: dict[str, str]
+
+
+class BalanceOut(BaseModel):
+    asset: str
+    free: str
+    locked: str
+    total: str
+
+
+class ExchangeOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    venue: str
+    venue_name: str
+    wallet: str
+    balances: list[BalanceOut]
+    balance_error: str
+    checked_at: datetime | None
+    created_at: datetime
+
+
+class CandleOut(BaseModel):
+    time: int
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+
+class MarketQuoteOut(BaseModel):
+    symbol: str
+    timeframe: str
+    last: str | None
+    bid: str | None
+    ask: str | None
+    high: str | None
+    low: str | None
+    percentage: str | None
+    change: str | None
+    base_volume: str | None
+    quote_volume: str | None
+    candles: list[CandleOut]

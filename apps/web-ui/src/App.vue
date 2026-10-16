@@ -124,6 +124,8 @@ async function logout() {
           <RouterLink to="/quant/crypto" custom v-slot="{ href, navigate }">
             <a :href="href" class="tab" :class="{ 'is-on': route.path === '/quant/crypto' }" @click="navigate">概览</a>
           </RouterLink>
+          <RouterLink to="/quant/crypto/markets" class="tab" :class="{ 'is-on': route.path.startsWith('/quant/crypto/markets') }">行情</RouterLink>
+          <RouterLink to="/quant/crypto/exchanges" class="tab" :class="{ 'is-on': route.path.startsWith('/quant/crypto/exchanges') }">交易所</RouterLink>
           <RouterLink to="/quant/crypto/strategies" class="tab" :class="{ 'is-on': route.path.startsWith('/quant/crypto/strategies') }">交易策略</RouterLink>
         </nav>
         <nav v-else class="tabs">

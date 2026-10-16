@@ -7,6 +7,8 @@ import LoginView from "./views/auth/LoginView.vue";
 import DashboardView from "./views/overview/DashboardView.vue";
 import QuantOverviewView from "./views/quant/QuantOverviewView.vue";
 import QuantStrategyView from "./views/quant/QuantStrategyView.vue";
+import ExchangeView from "./views/quant/ExchangeView.vue";
+import MarketView from "./views/quant/MarketView.vue";
 import KeyListView from "./views/servers/KeyListView.vue";
 import ServerDetailView from "./views/servers/ServerDetailView.vue";
 import ServerFormView from "./views/servers/ServerFormView.vue";
@@ -34,6 +36,8 @@ export const router = createRouter({
     { path: "/accounts/crypto/:id", name: "crypto-wallet", component: WalletDetailView },
     { path: "/accounts/cards", name: "card-accounts", component: CardAccountView },
     { path: "/quant/crypto", name: "quant-overview", component: QuantOverviewView },
+    { path: "/quant/crypto/markets", name: "quant-markets", component: MarketView },
+    { path: "/quant/crypto/exchanges", name: "quant-exchanges", component: ExchangeView },
     { path: "/quant/crypto/strategies", name: "quant-strategies", component: QuantStrategyView },
   ],
 });

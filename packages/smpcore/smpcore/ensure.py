@@ -24,6 +24,10 @@ def ensure_runtime_schema(engine: Engine) -> None:
     with engine.begin() as connection:
         if "server_groups" not in tables:
             ServerGroup.__table__.create(connection)
+        if "exchange_accounts" not in tables:
+            from smpcore.models import ExchangeAccount
+
+            ExchangeAccount.__table__.create(connection)
         if "servers" in tables:
             present = {column["name"] for column in inspector.get_columns("servers")}
             for name, column_type in _SERVER_COLUMNS.items():
