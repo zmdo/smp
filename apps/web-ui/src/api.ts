@@ -83,6 +83,14 @@ export interface Job {
   finished_at: string | null;
 }
 
+export interface SshKey {
+  id: string;
+  name: string;
+  fingerprint: string;
+  server_count: number;
+  created_at: string;
+}
+
 export interface ServerGroup {
   id: string;
   name: string;
