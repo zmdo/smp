@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { RouteProvider } from '../route'
-import { CryptoAccountView } from './CryptoAccountView'
+import { RouteProvider } from '../../../shared/src/route'
 import { ServerDetailView } from './ServerDetailView'
 import { ServerFormView } from './ServerFormView'
 import { ServerListView } from './ServerListView'
 import { ServerTerminalView } from './ServerTerminalView'
-import { WalletDetailView } from './WalletDetailView'
 
 function serverKind(path: string): 'list' | 'form' | 'detail' | 'terminal' {
   const pathname = path.split('?')[0]
@@ -24,16 +22,6 @@ export function ServerHost() {
       {kind === 'form' && <ServerFormView />}
       {kind === 'detail' && <ServerDetailView />}
       {kind === 'terminal' && <ServerTerminalView />}
-    </RouteProvider>
-  )
-}
-
-export function WalletHost() {
-  const [path, setPath] = useState('/accounts/crypto')
-  const detail = path.split('?')[0].split('/').filter(Boolean).length > 2
-  return (
-    <RouteProvider path={path} go={setPath}>
-      {detail ? <WalletDetailView /> : <CryptoAccountView />}
     </RouteProvider>
   )
 }

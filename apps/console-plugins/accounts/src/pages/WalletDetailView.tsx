@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "../route";
-import { ApiError, api, formatTime } from "../api";
+import { Link, useParams } from "../../../shared/src/route";
+import { ApiError, api, formatTime } from "../../../shared/src/api";
 
 interface Address {
   chain: string;

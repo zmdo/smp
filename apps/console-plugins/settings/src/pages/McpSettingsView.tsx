@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ApiError, api } from "../api";
+import { ApiError, api } from "../../../shared/src/api";
 
 interface McpSettings {
   enabled: boolean;

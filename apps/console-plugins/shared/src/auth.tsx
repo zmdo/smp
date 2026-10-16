@@ -21,23 +21,40 @@ interface AuthSnap {
   totpEnabled: boolean
 }
 
-let snap: AuthSnap = {
-  checked: false,
-  authenticated: false,
-  username: null,
-  passwordIsDefault: false,
-  totpEnabled: false,
+interface AuthBucket {
+  snap: AuthSnap
+  listeners: Set<() => void>
 }
-const listeners = new Set<() => void>()
+
+const AUTH_KEY = '__SMP_CONSOLE_AUTH__'
+
+function bucket(): AuthBucket {
+  const host = globalThis as typeof globalThis & { [AUTH_KEY]?: AuthBucket }
+  if (host[AUTH_KEY] === undefined) {
+    host[AUTH_KEY] = {
+      snap: {
+        checked: false,
+        authenticated: false,
+        username: null,
+        passwordIsDefault: false,
+        totpEnabled: false,
+      },
+      listeners: new Set(),
+    }
+  }
+  return host[AUTH_KEY]
+}
 
 function publish(next: AuthSnap): void {
-  snap = next
-  for (const listener of listeners) listener()
+  const store = bucket()
+  store.snap = next
+  for (const listener of store.listeners) listener()
 }
 
 function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => { listeners.delete(listener) }
+  const store = bucket()
+  store.listeners.add(listener)
+  return () => { store.listeners.delete(listener) }
 }
 
 export async function refreshAuth(): Promise<void> {
@@ -65,10 +82,10 @@ export async function login(username: string, password: string, totpCode?: strin
 
 export async function logout(): Promise<void> {
   await api('/api/auth/logout', { method: 'POST' })
-  publish({ ...snap, authenticated: false, username: null, totpEnabled: false })
+  publish({ ...bucket().snap, authenticated: false, username: null, totpEnabled: false })
 }
 
 export function useAuth() {
-  const current = useSyncExternalStore(subscribe, () => snap)
+  const current = useSyncExternalStore(subscribe, () => bucket().snap)
   return { ...current, refresh: refreshAuth, login, logout }
 }

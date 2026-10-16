@@ -1,0 +1,3 @@
+- insert:
+    - id: console-quant
+      name: '@smp/console-quant'

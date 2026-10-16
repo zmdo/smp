@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "../route";
+import { Link, useNavigate, useParams, useSearchParams } from "../../../shared/src/route";
 import {
   ApiError, api, containerStatusLabel, formatTime, jobActionLabel, jobStatusLabel, reachabilityLabel, sleep,
   type ComponentInfo, type Job, type ServerDetail,
-} from "../api";
-import { CopyButton } from "../components/CopyButton";
-import { NameEditor } from "../components/NameEditor";
-import { StatusPill } from "../components/StatusPill";
-import { UsageMeter } from "../components/UsageMeter";
-import { byteCaption, percentOf } from "../usage";
+} from "../../../shared/src/api";
+import { CopyButton } from "../../../shared/src/components/CopyButton";
+import { NameEditor } from "../../../shared/src/components/NameEditor";
+import { StatusPill } from "../../../shared/src/components/StatusPill";
+import { UsageMeter } from "../../../shared/src/components/UsageMeter";
+import { byteCaption, percentOf } from "../../../shared/src/usage";
 
 export function ServerDetailView() {
   const { id = "" } = useParams();

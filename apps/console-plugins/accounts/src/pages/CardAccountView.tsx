@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ApiError, api } from "../api";
+import { ApiError, api } from "../../../shared/src/api";
 import placesJson from "../geo/places.json";
 
 interface UsState {

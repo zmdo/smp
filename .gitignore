@@ -11,4 +11,4 @@ data/
 tmp/
 .DS_Store
 .pnpm-store/
-apps/console-plugins/shell/lib/
+apps/console-plugins/*/lib/

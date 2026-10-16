@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import { FormEvent, useEffect, useState } from "react";
-import { ApiError, api } from "../api";
-import { useAuth } from "../auth";
+import { ApiError, api } from "../../../shared/src/api";
+import { useAuth } from "../../../shared/src/auth";
 
 export function AccountView() {
   const auth = useAuth();

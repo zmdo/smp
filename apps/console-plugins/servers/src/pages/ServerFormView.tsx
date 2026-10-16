@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "../route";
-import { ApiError, api, type ComponentInfo, type ServerDetail, type ServerGroup, type SshKey } from "../api";
+import { Link, useNavigate, useParams } from "../../../shared/src/route";
+import { ApiError, api, type ComponentInfo, type ServerDetail, type ServerGroup, type SshKey } from "../../../shared/src/api";
 
 export function ServerFormView() {
   const { id = "" } = useParams();

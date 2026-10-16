@@ -1,11 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "../route";
-import { ApiError, api, formatTime, reachabilityLabel, type ServerGroup, type ServerSummary } from "../api";
-import { CopyButton } from "../components/CopyButton";
-import { NameEditor } from "../components/NameEditor";
-import { StatusPill } from "../components/StatusPill";
-import { UsageMeter } from "../components/UsageMeter";
-import { byteCaption, percentOf } from "../usage";
+import { Link, useNavigate } from "../../../shared/src/route";
+import { ApiError, api, formatTime, reachabilityLabel, type ServerGroup, type ServerSummary } from "../../../shared/src/api";
+import { CopyButton } from "../../../shared/src/components/CopyButton";
+import { NameEditor } from "../../../shared/src/components/NameEditor";
+import { StatusPill } from "../../../shared/src/components/StatusPill";
+import { UsageMeter } from "../../../shared/src/components/UsageMeter";
+import { byteCaption, percentOf } from "../../../shared/src/usage";
 
 export function ServerListView() {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ApiError, api, formatTime, type SshKey } from "../api";
+import { ApiError, api, formatTime, type SshKey } from "../../../shared/src/api";
 
 export function KeyListView() {
   const [keys, setKeys] = useState<SshKey[]>([]);

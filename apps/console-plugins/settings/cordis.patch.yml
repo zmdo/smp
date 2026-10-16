@@ -1,0 +1,3 @@
+- insert:
+    - id: console-settings
+      name: '@smp/console-settings'

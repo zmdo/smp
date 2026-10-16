@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ApiError, api, formatTime } from "../api";
+import { ApiError, api, formatTime } from "../../../shared/src/api";
 
 interface VenueField { key: string; label: string }
 interface Venue { id: string; name: string; wallet: string; fields: VenueField[] }

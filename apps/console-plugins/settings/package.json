@@ -1,0 +1,41 @@
+{
+  "name": "@smp/console-settings",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "策略控制台栏目：平台设置",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "cordis.patch.yml"
+  ],
+  "engines": {
+    "dsh": "0.2.1-alpha.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "esbuild": "^0.25.10",
+    "react": "^18.3.1",
+    "@types/qrcode": "^1.5.6"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

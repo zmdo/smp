@@ -1,6 +1,6 @@
 import { createChart, type CandlestickData, type IChartApi, type ISeriesApi } from "lightweight-charts";
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ApiError, api } from "../api";
+import { ApiError, api } from "../../../shared/src/api";
 
 interface Venue { id: string; name: string; wallet: string }
 interface Candle { time: number; open: number; high: number; low: number; close: number; volume: number }

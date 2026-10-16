@@ -2,8 +2,8 @@ import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import xtermCss from "@xterm/xterm/css/xterm.css";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "../route";
-import { api, type ServerSummary } from "../api";
+import { Link, useParams } from "../../../shared/src/route";
+import { api, type ServerSummary } from "../../../shared/src/api";
 
 export function ServerTerminalView() {
   const { id = "" } = useParams();

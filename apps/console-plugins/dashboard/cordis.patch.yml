@@ -1,0 +1,3 @@
+- insert:
+    - id: console-dashboard
+      name: '@smp/console-dashboard'

@@ -1,16 +1,6 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
-import { logout, refreshAuth, useAuth } from './auth'
+import { logout, refreshAuth, useAuth } from '../../shared/src/auth'
 import contentCss from './content.css'
-import { AccountView } from './pages/AccountView'
-import { CardAccountView } from './pages/CardAccountView'
-import { DashboardView } from './pages/DashboardView'
-import { ExchangeView } from './pages/ExchangeView'
-import { KeyListView } from './pages/KeyListView'
-import { MarketView } from './pages/MarketView'
-import { McpSettingsView } from './pages/McpSettingsView'
-import { QuantOverviewView } from './pages/QuantOverviewView'
-import { QuantStrategyView } from './pages/QuantStrategyView'
-import { ServerHost, WalletHost } from './pages/hosts'
 
 /** Services the web profile already provides. Typed loosely so this package does not import harness. */
 interface Layout {
@@ -340,31 +330,6 @@ function ShellSidebar(props: {
   )
 }
 
-function EmptyPanel(props: { title: string }) {
-  return (
-    <section className="panel">
-      <header className="panel-head"><h1><span className="mark" />{props.title}</h1></header>
-      <p className="empty">还没有可展示的内容。</p>
-    </section>
-  )
-}
-
-function pageFor(id: SectionId): ReactNode {
-  switch (id) {
-    case 'dashboard': return <DashboardView />
-    case 'quant-overview': return <QuantOverviewView />
-    case 'quant-markets': return <MarketView />
-    case 'quant-exchanges': return <ExchangeView />
-    case 'quant-strategies': return <QuantStrategyView />
-    case 'wallet': return <WalletHost />
-    case 'cards': return <CardAccountView />
-    case 'servers': return <ServerHost />
-    case 'keys': return <KeyListView />
-    case 'settings': return <AccountView />
-    case 'mcp': return <McpSettingsView />
-  }
-}
-
 function LoginRedirect() {
   window.location.replace('/login')
   return null
@@ -374,11 +339,7 @@ function ConsolePanel(props: { renderSlot?: RenderSlot }) {
   const current = useSyncExternalStore(subscribeSection, getSection)
   const auth = useAuth()
   const tabs = tabsFor(current)
-  const builtin = pageFor(current)
-  const body = props.renderSlot?.('console.page', {}, {
-    entryKey: current,
-    fallback: builtin,
-  }) ?? builtin
+  const body = props.renderSlot?.('console.page', {}, { entryKey: current }) ?? null
   return (
     <div className="smp-console">
       {auth.authenticated && (

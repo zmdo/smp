@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "../route";
-import { ApiError, api, formatTime } from "../api";
+import { Link, useNavigate } from "../../../shared/src/route";
+import { ApiError, api, formatTime } from "../../../shared/src/api";
 
 interface WalletRow {
   id: string;
