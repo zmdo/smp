@@ -11,6 +11,7 @@ COPY apps/dsh/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV DSH_HOME=/var/lib/dsh \
-    DSH_PUBLIC_URL=http://127.0.0.1:8080/
+    DSH_PUBLIC_URL=http://127.0.0.1:8080/ \
+    SMP_AUTH_URL=http://web-api:8000/api/auth/me
 EXPOSE 3080
 ENTRYPOINT ["/entrypoint.sh"]

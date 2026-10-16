@@ -91,6 +91,7 @@ services:
     environment:
       DSH_HOME: /var/lib/dsh
       DSH_PUBLIC_URL: http://127.0.0.1:8080/
+      SMP_AUTH_URL: http://web-api:8000/api/auth/me
     volumes:
       - dsh-home:/var/lib/dsh
     healthcheck:

@@ -45,7 +45,7 @@ dsh --profile web
 
 ## 3. 迁页面
 
-插件里的请求走统一的读取函数：把原来的 `/api` 换成 `/console-api`，并带上 cookie。没有 `smp_session` 时，壳画出登录，不把 `dsh` 的启动 token 写进前端包。打开页面仍用 `dsh` 打印的地址完成它自己的登录。
+插件里的请求走统一的读取函数：把原来的 `/api` 换成 `/console-api`，并带上 cookie。没有 `smp_session` 时，浏览器打开单独的 `/login`，不加载控制台侧栏。登录成功后宿主放行页面和军师连接，不再用 `dsh` 打印的启动 token 开门。
 
 栏目插件只往 `console.page` 注册，不注册 `sidebar.panellist`。顺序：
 

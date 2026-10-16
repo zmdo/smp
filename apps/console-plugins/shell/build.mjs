@@ -1,8 +1,15 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import * as esbuild from 'esbuild'
 
 mkdirSync('lib', { recursive: true })
-writeFileSync('lib/index.js', '/** Host half. The shell only draws in the browser. */\nexport function apply() {}\n')
+
+await esbuild.build({
+  entryPoints: ['src/index.ts'],
+  outfile: 'lib/index.js',
+  bundle: true,
+  format: 'esm',
+  platform: 'node',
+})
 
 await esbuild.build({
   entryPoints: ['src/client.tsx'],

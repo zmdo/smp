@@ -1,5 +1,4 @@
-import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
-import { ApiError } from './api'
+import { useState, useSyncExternalStore, type ReactNode } from 'react'
 import { logout, refreshAuth, useAuth } from './auth'
 import contentCss from './content.css'
 import { AccountView } from './pages/AccountView'
@@ -366,45 +365,9 @@ function pageFor(id: SectionId): ReactNode {
   }
 }
 
-function LoginPanel() {
-  const auth = useAuth()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('')
-  const [totpCode, setTotpCode] = useState('')
-  const [needTotp, setNeedTotp] = useState(false)
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  async function submit(event: FormEvent) {
-    event.preventDefault()
-    setError('')
-    setSubmitting(true)
-    try {
-      const result = await auth.login(username, password, needTotp ? totpCode : undefined)
-      if (result.totp_required) {
-        setNeedTotp(true)
-        setError('这个账户开启了两步验证，请填写验证码')
-      }
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : '登录失败')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <div className="login-wrap">
-      <form className="login-card" onSubmit={(event) => { void submit(event) }}>
-        <div className="login-brand"><span className="logo-mark">策</span><h1>策略控制台</h1></div>
-        <p className="muted">使用用户名和密码登录。开启两步验证后，还需要验证码。</p>
-        {error !== '' && <p className="banner error">{error}</p>}
-        <label>用户名<input value={username} autoComplete="username" required onChange={(event) => setUsername(event.target.value)} /></label>
-        <label>密码<input value={password} type="password" autoComplete="current-password" required onChange={(event) => setPassword(event.target.value)} /></label>
-        {needTotp && <label>验证码<input value={totpCode} inputMode="numeric" autoComplete="one-time-code" maxLength={6} required onChange={(event) => setTotpCode(event.target.value)} /></label>}
-        <button className="primary" type="submit" disabled={submitting}>登录</button>
-      </form>
-    </div>
-  )
+function LoginRedirect() {
+  window.location.replace('/login')
+  return null
 }
 
 function ConsolePanel(props: { renderSlot?: RenderSlot }) {
@@ -427,16 +390,17 @@ function ConsolePanel(props: { renderSlot?: RenderSlot }) {
               </button>
             ))}
           </nav>
-          <button className="link" type="button" onClick={() => { void logout() }}>退出</button>
+          <button className="link" type="button" onClick={() => { void logout().then(() => { window.location.assign('/login') }) }}>退出</button>
         </header>
       )}
       <div className="content">
-        {!auth.checked ? null : !auth.authenticated ? <LoginPanel /> : (
+        {!auth.checked ? null : !auth.authenticated ? null : (
           <>
             {auth.passwordIsDefault && <p className="banner">当前仍是默认用户名 admin、密码 changeme。请到「平台设置 / 登录安全」里修改。</p>}
             {body}
           </>
         )}
+        {auth.checked && !auth.authenticated ? <LoginRedirect /> : null}
       </div>
     </div>
   )
