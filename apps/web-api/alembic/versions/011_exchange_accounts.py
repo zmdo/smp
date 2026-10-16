@@ -30,3 +30,5 @@ def upgrade() -> None:
         sa.Column("checked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
+    if bind.dialect.name == "postgresql":
+        op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON exchange_accounts TO web_api")

@@ -39,3 +39,5 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="SET NULL",
             )
+    if bind.dialect.name == "postgresql":
+        op.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON server_groups TO web_api")
