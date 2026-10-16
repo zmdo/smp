@@ -51,6 +51,10 @@ export interface ServerSummary {
   disk_total_bytes: number | null;
   disk_used_bytes: number | null;
   metrics_at: string | null;
+  region: string | null;
+  auto_install: boolean;
+  component_ids: string[];
+  component_status: Record<string, { installed: boolean; detail: string }>;
   container_count: number | null;
   created_at: string;
 }
@@ -105,9 +109,17 @@ export const jobStatusLabel: Record<string, string> = {
   failed: "失败",
 };
 
+export interface ComponentInfo {
+  id: string;
+  name: string;
+  summary: string;
+  requires: string[];
+}
+
 export const jobActionLabel: Record<string, string> = {
   test_connection: "测试连接",
   inspect: "刷新容器",
+  install_components: "安装组件",
 };
 
 export function formatTime(value: string | null): string {

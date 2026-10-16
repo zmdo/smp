@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ApiError, api, type ServerDetail, type SshKey } from "../api";
+import { ApiError, api, type ComponentInfo, type ServerDetail, type SshKey } from "../api";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,12 +18,16 @@ const keys = ref<SshKey[]>([]);
 const selectedKeyId = ref("");
 const keyName = ref("");
 const secret = ref("");
+const autoInstall = ref(false);
+const components = ref<ComponentInfo[]>([]);
+const selectedComponents = ref<string[]>([]);
 const error = ref("");
 const submitting = ref(false);
 
 onMounted(async () => {
   try {
     keys.value = await api<SshKey[]>("/api/ssh-keys");
+    components.value = await api<ComponentInfo[]>("/api/components");
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : "密钥列表加载失败";
   }
@@ -43,10 +47,20 @@ onMounted(async () => {
       keySource.value = "existing";
       selectedKeyId.value = server.ssh_key_id;
     }
+    autoInstall.value = server.auto_install;
+    selectedComponents.value = server.component_ids.length
+      ? [...server.component_ids]
+      : components.value.map((item) => item.id);
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : "加载失败";
   }
 });
+
+function fillComponents() {
+  if (autoInstall.value && selectedComponents.value.length === 0) {
+    selectedComponents.value = components.value.map((item) => item.id);
+  }
+}
 
 async function submit() {
   error.value = "";
@@ -83,6 +97,13 @@ async function submit() {
     body.secret = secret.value;
     body.ssh_key_name = keyName.value;
   }
+  body.auto_install = autoInstall.value;
+  body.component_ids = autoInstall.value ? selectedComponents.value : [];
+  if (autoInstall.value && selectedComponents.value.length === 0) {
+    error.value = "请选择要安装的组件";
+    submitting.value = false;
+    return;
+  }
   try {
     const path = isEdit.value ? `/api/servers/${serverId.value}` : "/api/servers";
     const method = isEdit.value ? "PATCH" : "POST";
@@ -106,7 +127,7 @@ async function submit() {
       <h1><i class="mark"></i>{{ isEdit ? "编辑服务器" : "登记服务器" }}</h1>
     </header>
     <div class="panel-body">
-      <p class="muted" style="margin-top: 0">通过 SSH 连接这台机器，公网或内网地址都可以。目标机器需要已经装好 Docker Engine 和 Compose 插件。</p>
+      <p class="muted" style="margin-top: 0">通过 SSH 连接这台机器，公网或内网地址都可以。需要 Docker 时可以在下面勾选自动安装，也可以连上之后再装。</p>
       <form class="panel-form" @submit.prevent="submit">
         <p v-if="error" class="banner error">{{ error }}</p>
         <label>名称<input v-model="name" required maxlength="80" /></label>
@@ -141,6 +162,20 @@ async function submit() {
           口令
           <input v-model="secret" type="password" :placeholder="isEdit ? '留空则不修改' : ''" />
         </label>
+        <label class="check">
+          <input v-model="autoInstall" type="checkbox" @change="fillComponents" />
+          自动安装必要组件
+        </label>
+        <div v-if="autoInstall" class="component-picks">
+          <label v-for="item in components" :key="item.id">
+            <input v-model="selectedComponents" type="checkbox" :value="item.id" />
+            <span>
+              <strong>{{ item.name }}</strong>
+              <span class="muted">{{ item.summary }}</span>
+            </span>
+          </label>
+          <p v-if="components.length === 0" class="muted">没有可安装的组件。</p>
+        </div>
         <div class="row">
           <button class="primary" type="submit" :disabled="submitting">{{ isEdit ? "保存" : "保存并测试连接" }}</button>
           <RouterLink class="link" :to="isEdit ? `/servers/${serverId}` : '/servers'">取消</RouterLink>

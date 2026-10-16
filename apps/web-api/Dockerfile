@@ -19,6 +19,9 @@ COPY --from=deriver /opt/node /opt/node
 COPY --from=deriver /opt/wallet-deriver /opt/wallet-deriver
 COPY packages/smpcore /src/smpcore
 COPY apps/web-api /src/web-api
+COPY components /components
+
+ENV COMPONENTS_DIR=/components
 
 RUN pip install --no-cache-dir /src/smpcore .
 

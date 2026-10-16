@@ -7,6 +7,9 @@ WORKDIR /src/ops
 
 COPY packages/smpcore /src/smpcore
 COPY apps/ops /src/ops
+COPY components /components
+
+ENV COMPONENTS_DIR=/components
 
 RUN pip install --no-cache-dir /src/smpcore .
 

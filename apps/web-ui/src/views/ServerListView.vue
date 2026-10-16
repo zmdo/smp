@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ApiError, api, formatTime, reachabilityLabel, type ServerSummary } from "../api";
 import StatusPill from "../components/StatusPill.vue";
+import UsageMeter from "../components/UsageMeter.vue";
+import { byteCaption, percentOf } from "../usage";
 
 const router = useRouter();
 const servers = ref<ServerSummary[]>([]);
@@ -29,7 +31,7 @@ const visible = computed(() => {
   const text = query.value.trim().toLowerCase();
   if (!text) return servers.value;
   return servers.value.filter((server) =>
-    `${server.name} ${server.intranet_host} ${server.ssh_user}`.toLowerCase().includes(text),
+    `${server.name} ${server.intranet_host} ${server.ssh_user} ${server.region || ""}`.toLowerCase().includes(text),
   );
 });
 
@@ -39,29 +41,6 @@ function openServer(id: string) {
 
 function countText(server: ServerSummary): string {
   return server.container_count === null ? "—" : String(server.container_count);
-}
-
-function usageLevel(percent: number): "ok" | "warn" | "hot" {
-  if (percent <= 80) return "ok";
-  if (percent < 90) return "warn";
-  return "hot";
-}
-
-function percentOf(used: number | null, total: number | null): number | null {
-  if (used === null || total === null || total <= 0) return null;
-  return Math.max(0, Math.min(100, Math.round((used / total) * 100)));
-}
-
-function formatBytes(value: number): string {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let size = value;
-  let index = 0;
-  while (size >= 1024 && index < units.length - 1) {
-    size /= 1024;
-    index += 1;
-  }
-  const digits = size >= 10 || index === 0 ? 0 : 1;
-  return `${size.toFixed(digits)} ${units[index]}`;
 }
 </script>
 
@@ -82,6 +61,7 @@ function formatBytes(value: number): string {
           <tr>
             <th>名称</th>
             <th>地址</th>
+            <th class="nowrap">区域</th>
             <th>状态</th>
             <th>CPU</th>
             <th>内存</th>
@@ -95,35 +75,12 @@ function formatBytes(value: number): string {
         <tbody>
           <tr v-for="server in visible" :key="server.id" @click="openServer(server.id)">
             <td>{{ server.name }}</td>
-            <td class="mono">{{ server.ssh_user }}@{{ server.intranet_host }}:{{ server.ssh_port }}</td>
+            <td class="mono nowrap">{{ server.ssh_user }}@{{ server.intranet_host }}:{{ server.ssh_port }}</td>
+            <td class="nowrap">{{ server.region || "—" }}</td>
             <td><StatusPill :value="server.reachability" :label="reachabilityLabel[server.reachability] || server.reachability" /></td>
-            <td>
-              <div v-if="server.cpu_percent !== null" class="meter">
-                <div class="meter-label"><span>{{ server.cpu_cores }} 核</span><span>{{ server.cpu_percent }}%</span></div>
-                <div class="meter-track"><i class="meter-bar" :class="usageLevel(server.cpu_percent)" :style="{ width: server.cpu_percent + '%' }"></i></div>
-              </div>
-              <span v-else>—</span>
-            </td>
-            <td>
-              <div v-if="percentOf(server.mem_used_bytes, server.mem_total_bytes) !== null" class="meter">
-                <div class="meter-label">
-                  <span>{{ formatBytes(server.mem_used_bytes || 0) }} / {{ formatBytes(server.mem_total_bytes || 0) }}</span>
-                  <span>{{ percentOf(server.mem_used_bytes, server.mem_total_bytes) }}%</span>
-                </div>
-                <div class="meter-track"><i class="meter-bar" :class="usageLevel(percentOf(server.mem_used_bytes, server.mem_total_bytes) || 0)" :style="{ width: (percentOf(server.mem_used_bytes, server.mem_total_bytes) || 0) + '%' }"></i></div>
-              </div>
-              <span v-else>—</span>
-            </td>
-            <td>
-              <div v-if="percentOf(server.disk_used_bytes, server.disk_total_bytes) !== null" class="meter">
-                <div class="meter-label">
-                  <span>{{ formatBytes(server.disk_used_bytes || 0) }} / {{ formatBytes(server.disk_total_bytes || 0) }}</span>
-                  <span>{{ percentOf(server.disk_used_bytes, server.disk_total_bytes) }}%</span>
-                </div>
-                <div class="meter-track"><i class="meter-bar" :class="usageLevel(percentOf(server.disk_used_bytes, server.disk_total_bytes) || 0)" :style="{ width: (percentOf(server.disk_used_bytes, server.disk_total_bytes) || 0) + '%' }"></i></div>
-              </div>
-              <span v-else>—</span>
-            </td>
+            <td><UsageMeter :caption="server.cpu_cores ? `${server.cpu_cores} 核` : ''" :percent="server.cpu_percent" /></td>
+            <td><UsageMeter :caption="byteCaption(server.mem_used_bytes, server.mem_total_bytes)" :percent="percentOf(server.mem_used_bytes, server.mem_total_bytes)" /></td>
+            <td><UsageMeter :caption="byteCaption(server.disk_used_bytes, server.disk_total_bytes)" :percent="percentOf(server.disk_used_bytes, server.disk_total_bytes)" /></td>
             <td>{{ server.docker_version || "—" }}</td>
             <td>{{ countText(server) }}</td>
             <td>{{ formatTime(server.last_checked_at) }}</td>

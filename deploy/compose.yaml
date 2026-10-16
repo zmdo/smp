@@ -42,8 +42,10 @@ services:
       DATABASE_URL: postgresql+psycopg://ops:ops_dev@postgres:5432/smp
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
       INSPECT_INTERVAL_SECONDS: "30"
+      COMPONENTS_DIR: /components
     volumes:
       - ops-keys:/data
+      - ../components:/components:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -66,6 +68,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       WALLET_DERIVER_NODE: /opt/node/bin/node
       WALLET_DERIVER_SCRIPT: /opt/wallet-deriver/derive.mjs
+      COMPONENTS_DIR: /components
+    volumes:
+      - ../components:/components:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -108,6 +108,8 @@ class ServerIn(BaseModel):
     secret: str | None = None
     ssh_key_id: uuid.UUID | None = None
     ssh_key_name: str | None = None
+    auto_install: bool = False
+    component_ids: list[str] = Field(default_factory=list)
 
 
 class ServerUpdate(BaseModel):
@@ -119,6 +121,8 @@ class ServerUpdate(BaseModel):
     secret: str | None = None
     ssh_key_id: uuid.UUID | None = None
     ssh_key_name: str | None = None
+    auto_install: bool | None = None
+    component_ids: list[str] | None = None
 
 
 class ServerOut(BaseModel):
@@ -142,6 +146,10 @@ class ServerOut(BaseModel):
     disk_total_bytes: int | None = None
     disk_used_bytes: int | None = None
     metrics_at: datetime | None = None
+    region: str | None = None
+    auto_install: bool = False
+    component_ids: list[str] = Field(default_factory=list)
+    component_status: dict[str, dict] = Field(default_factory=dict)
     container_count: int | None
     created_at: datetime
 

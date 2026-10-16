@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import uuid
@@ -10,6 +11,7 @@ from cryptography.fernet import Fernet
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
+from smp_ops.components import detect_components
 from smp_ops.crypto import decrypt
 from smp_ops.ssh import connect, run_command
 from smp_ops.worker import _ciphertext
@@ -122,6 +124,7 @@ def _sample_until_drop(
         expected_fingerprint=expected,
     )
     try:
+        _remember_components(sessions, server_id, client)
         while not stop.is_set():
             with sessions() as session:
                 if session.get(Server, server_id) is None:
@@ -136,3 +139,18 @@ def _sample_until_drop(
                 session.commit()
     finally:
         client.close()
+
+
+def _remember_components(sessions: sessionmaker[Session], server_id: uuid.UUID, client) -> None:
+    try:
+        status = detect_components(client)
+    except Exception:
+        log.warning("component detect failed for %s", server_id)
+        return
+    with sessions() as session:
+        session.execute(
+            update(Server).where(Server.id == server_id).values(
+                component_status=json.dumps(status, ensure_ascii=False)
+            )
+        )
+        session.commit()

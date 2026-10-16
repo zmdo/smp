@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import HTTPException, Request
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
@@ -67,7 +69,39 @@ def server_out(server, container_count: int | None) -> dict:
         "disk_total_bytes": server.disk_total_bytes,
         "disk_used_bytes": server.disk_used_bytes,
         "metrics_at": server.metrics_at,
+        "region": server.region,
+        "auto_install": bool(server.auto_install),
+        "component_ids": _json_list(server.install_component_ids),
+        "component_status": _json_status(server.component_status),
         "container_count": container_count,
         "created_at": server.created_at,
     }
+
+
+def _json_list(raw: str | None) -> list[str]:
+    try:
+        value = json.loads(raw or "[]")
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
+def _json_status(raw: str | None) -> dict[str, dict[str, object]]:
+    try:
+        value = json.loads(raw or "{}")
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(value, dict):
+        return {}
+    status: dict[str, dict[str, object]] = {}
+    for key, item in value.items():
+        if not isinstance(item, dict):
+            continue
+        status[str(key)] = {
+            "installed": bool(item.get("installed")),
+            "detail": str(item.get("detail") or ""),
+        }
+    return status
 

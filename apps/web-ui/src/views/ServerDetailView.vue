@@ -10,23 +10,34 @@ import {
   jobStatusLabel,
   reachabilityLabel,
   sleep,
+  type ComponentInfo,
   type Job,
   type ServerDetail,
 } from "../api";
 import StatusPill from "../components/StatusPill.vue";
+import UsageMeter from "../components/UsageMeter.vue";
+import { byteCaption, percentOf } from "../usage";
 
 const route = useRoute();
 const router = useRouter();
 const server = ref<ServerDetail | null>(null);
+const components = ref<ComponentInfo[]>([]);
 const error = ref("");
 const currentJob = ref<Job | null>(null);
 const busy = ref(false);
 let stopped = false;
+let timer = 0;
 
 const serverId = computed(() => String(route.params.id || ""));
 
 onMounted(async () => {
+  try {
+    components.value = await api<ComponentInfo[]>("/api/components");
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : "组件列表加载失败";
+  }
   await load();
+  timer = window.setInterval(() => void load(), 1000);
   const requested = typeof route.query.job === "string" ? route.query.job : "";
   const running = server.value?.recent_jobs.find((job) => job.status === "queued" || job.status === "running");
   const jobId = requested || running?.id;
@@ -35,13 +46,14 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopped = true;
+  window.clearInterval(timer);
 });
 
 async function load() {
   try {
     server.value = await api<ServerDetail>(`/api/servers/${serverId.value}`);
   } catch (err) {
-    error.value = err instanceof ApiError ? err.message : "加载失败";
+    if (!server.value) error.value = err instanceof ApiError ? err.message : "加载失败";
   }
 }
 
@@ -78,6 +90,27 @@ async function run(action: "test" | "inspect") {
   }
 }
 
+async function installComponents() {
+  error.value = "";
+  try {
+    const job = await api<Job>(`/api/servers/${serverId.value}/install-components`, { method: "POST" });
+    await watchJob(job.id);
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : "操作失败";
+  }
+}
+
+const missingComponents = computed(() =>
+  components.value.filter((item) => server.value?.component_status[item.id]?.installed !== true),
+);
+
+function componentState(id: string): string {
+  const item = server.value?.component_status[id];
+  if (!item) return "未检测";
+  if (!item.installed) return "未安装";
+  return item.detail ? `已安装 ${item.detail}` : "已安装";
+}
+
 async function remove() {
   if (!server.value) return;
   if (!window.confirm(`删除服务器「${server.value.name}」？这不会关闭那台机器上已经在跑的容器。`)) return;
@@ -105,7 +138,22 @@ const showContainers = computed(() => {
         <StatusPill :value="server.reachability" :label="reachabilityLabel[server.reachability] || server.reachability" />
       </div>
       <p class="sub mono">{{ server.ssh_user }}@{{ server.intranet_host }}:{{ server.ssh_port }}</p>
+      <div class="usage-row">
+        <div>
+          <span>CPU</span>
+          <UsageMeter :caption="server.cpu_cores ? `${server.cpu_cores} 核` : ''" :percent="server.cpu_percent" />
+        </div>
+        <div>
+          <span>内存</span>
+          <UsageMeter :caption="byteCaption(server.mem_used_bytes, server.mem_total_bytes)" :percent="percentOf(server.mem_used_bytes, server.mem_total_bytes)" />
+        </div>
+        <div>
+          <span>硬盘</span>
+          <UsageMeter :caption="byteCaption(server.disk_used_bytes, server.disk_total_bytes)" :percent="percentOf(server.disk_used_bytes, server.disk_total_bytes)" />
+        </div>
+      </div>
       <div class="node-grid">
+        <div><span>区域</span>{{ server.region || "—" }}</div>
         <div><span>登录</span>{{ server.auth_method === "private_key" ? (server.ssh_key_name || "密钥") : "口令" }}</div>
         <div><span>Docker</span>{{ server.docker_version || "—" }}</div>
         <div><span>Compose</span>{{ server.compose_version || "—" }}</div>
@@ -123,10 +171,37 @@ const showContainers = computed(() => {
 
     <section class="panel">
       <header class="panel-head">
+        <h2><i class="mark"></i>必要组件</h2>
+        <button v-if="missingComponents.length" class="primary" type="button" :disabled="busy" @click="installComponents">安装必要组件</button>
+      </header>
+      <div v-if="components.length === 0" class="empty">没有可安装的组件。</div>
+      <div v-else class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>组件</th>
+              <th>状态</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in components" :key="item.id">
+              <td>{{ item.name }}</td>
+              <td>{{ componentState(item.id) }}</td>
+              <td class="muted">{{ item.summary }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <footer v-if="missingComponents.length" class="panel-foot">只会安装还没有的组件，已经存在的会跳过。</footer>
+    </section>
+
+    <section class="panel">
+      <header class="panel-head">
         <h2><i class="mark"></i>容器 <em class="count">{{ server.containers.length }}</em></h2>
       </header>
       <div class="empty" v-if="server.reachability === 'unknown'">尚未测试连接。</div>
-      <div class="empty" v-else-if="server.reachability === 'docker_unavailable'">Docker 检查没有通过。看上面的任务结果，装好 Docker 后再测试连接。</div>
+      <div class="empty" v-else-if="server.reachability === 'docker_unavailable'">Docker 还没装好。可以在上面一键安装必要组件。</div>
       <div class="empty" v-else-if="!showContainers">还没有成功的巡检。在线后会每 30 秒自动刷新，也可以现在立即刷新。</div>
       <div class="empty" v-else-if="server.containers.length === 0">这台服务器上没有容器。</div>
       <div v-else class="table-wrap">

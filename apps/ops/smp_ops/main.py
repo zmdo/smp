@@ -16,6 +16,7 @@ from smp_ops.metrics import metrics_loop
 from smp_ops.ssh import OpsSSHError, fingerprint_of, load_private_key
 from smp_ops.terminal import serve_terminal
 from smp_ops.worker import build_session_factory, schedule_loop, worker_loop
+from smpcore.ensure import ensure_runtime_schema
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("smp.ops")
@@ -49,6 +50,7 @@ class DecryptOut(BaseModel):
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    ensure_runtime_schema(sessions.kw["bind"])
     stop = threading.Event()
     threads = [
         threading.Thread(target=worker_loop, args=(stop, sessions, fernet), name=f"ops-worker-{index}", daemon=True)

@@ -1,0 +1,7 @@
+{
+  "id": "compose",
+  "name": "Docker Compose 插件",
+  "summary": "用 docker compose 管理多容器应用，需要先有 Docker Engine",
+  "order": 20,
+  "requires": ["docker"]
+}

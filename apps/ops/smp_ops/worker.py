@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import uuid
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from smp_ops.components import detect_components, install_missing
 from smp_ops.crypto import decrypt
 from smp_ops.docker_parse import excerpt, scrub
 from smp_ops.ssh import (
@@ -22,11 +25,13 @@ from smp_ops.ssh import (
     inspect_containers,
     probe,
 )
+from smpcore.components import load_catalog
 from smpcore.models import OpsJob, Server, ServerContainer, SshKey
 
 log = logging.getLogger("smp.ops")
 
 _STALE_AFTER = timedelta(minutes=3)
+_INSTALL_STALE_AFTER = timedelta(minutes=20)
 _claim_lock = threading.Lock()
 
 
@@ -122,11 +127,36 @@ def execute_job(sessions: sessionmaker[Session], fernet: Fernet, job_id: uuid.UU
         auth_method = server.auth_method
         expected = server.host_key_fingerprint
         server_id = server.id
+        auto_install = bool(server.auto_install)
+        selected = _component_ids(server.install_component_ids)
 
     try:
         if action == "test_connection":
-            result = _probe(host, port, username, auth_method, secret, expected)
-            _apply_probe(sessions, job_id, server_id, secret, result)
+            _connect_and_prepare(
+                sessions,
+                job_id,
+                server_id,
+                secret,
+                host,
+                port,
+                username,
+                auth_method,
+                expected,
+                selected if auto_install else [],
+            )
+        elif action == "install_components":
+            _connect_and_prepare(
+                sessions,
+                job_id,
+                server_id,
+                secret,
+                host,
+                port,
+                username,
+                auth_method,
+                expected,
+                [item.id for item in load_catalog()],
+            )
         elif action == "inspect":
             result = _inspect(host, port, username, auth_method, secret, expected)
             _apply_inspect(sessions, job_id, server_id, secret, result)
@@ -140,13 +170,15 @@ def execute_job(sessions: sessionmaker[Session], fernet: Fernet, job_id: uuid.UU
 
 
 def recover_stale_jobs(sessions: sessionmaker[Session]) -> None:
-    cutoff = datetime.now(timezone.utc) - _STALE_AFTER
     with sessions() as session:
-        stale = session.scalars(
-            select(OpsJob).where(OpsJob.status == "running", OpsJob.started_at < cutoff)
-        ).all()
+        stale = session.scalars(select(OpsJob).where(OpsJob.status == "running")).all()
         now = datetime.now(timezone.utc)
         for job in stale:
+            if job.started_at is None:
+                continue
+            limit = _INSTALL_STALE_AFTER if job.action in {"install_components", "test_connection"} else _STALE_AFTER
+            if job.started_at >= now - limit:
+                continue
             job.status = "failed"
             job.finished_at = now
             job.output_excerpt = "运维服务中断，任务已失败，请重新执行。"
@@ -183,14 +215,33 @@ def mark_failed(sessions: sessionmaker[Session], job_id: uuid.UUID, message: str
         session.commit()
 
 
-def _probe(
+def _component_ids(raw: str) -> list[str]:
+    try:
+        value = json.loads(raw or "[]")
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
+def _save_component_status(sessions: sessionmaker[Session], server_id: uuid.UUID, status: dict) -> None:
+    with sessions() as session:
+        server = session.get(Server, server_id)
+        if server is None:
+            return
+        server.component_status = json.dumps(status, ensure_ascii=False)
+        session.commit()
+
+
+def _open_client(
     host: str,
     port: int,
     username: str,
     auth_method: str,
     secret: str,
     expected: str | None,
-) -> ProbeResult:
+):
     client, policy = connect(
         host=host,
         port=port,
@@ -199,11 +250,49 @@ def _probe(
         secret=secret,
         expected_fingerprint=expected,
     )
+    seen = policy.seen
+    if not seen:
+        client.close()
+        raise OpsSSHError("没有读到主机密钥指纹")
+    return client, seen
+
+
+def _connect_and_prepare(
+    sessions: sessionmaker[Session],
+    job_id: uuid.UUID,
+    server_id: uuid.UUID,
+    secret: str,
+    host: str,
+    port: int,
+    username: str,
+    auth_method: str,
+    expected: str | None,
+    component_ids: list[str],
+) -> None:
+    client, fingerprint = _open_client(host, port, username, auth_method, secret, expected)
+    status: dict = {}
     try:
-        seen = policy.seen
-        if not seen:
-            raise OpsSSHError("没有读到主机密钥指纹")
-        return probe(client, seen)
+        status = detect_components(client)
+        _save_component_status(sessions, server_id, status)
+        report = install_missing(client, component_ids) if component_ids else None
+        if report is not None and report.changed:
+            client.close()
+            client, fingerprint = _open_client(host, port, username, auth_method, secret, fingerprint)
+        if report is not None:
+            status = detect_components(client)
+            _save_component_status(sessions, server_id, status)
+        result = probe(client, fingerprint)
+        if report is not None and report.notes:
+            result = replace(result, output=" ".join(report.notes) + " " + result.output)
+        _apply_probe(sessions, job_id, server_id, secret, result)
+    except OpsSSHError:
+        try:
+            if client.get_transport() is not None and client.get_transport().is_active():
+                status = detect_components(client)
+                _save_component_status(sessions, server_id, status)
+        except Exception:
+            log.warning("component status refresh failed for %s", server_id)
+        raise
     finally:
         client.close()
 

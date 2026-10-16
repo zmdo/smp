@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -9,9 +10,11 @@ from sqlalchemy.orm import Session
 
 from smp_web.deps import get_session, job_out, require_user, server_out
 from smp_web.key_store import require_key, store_private_key
+from smp_web.region import lookup_region
 from smp_web.schemas import JobOut, ServerCreatedOut, ServerDetailOut, ServerIn, ServerOut, ServerUpdate
 from smp_web.secrets_client import encrypt_secret
 from smp_web.validation import FieldError, clean_host, clean_name, clean_port, clean_user
+from smpcore.components import normalize_selection
 from smpcore.models import OpsJob, Server, ServerContainer
 
 router = APIRouter(prefix="/api/servers", dependencies=[Depends(require_user)])
@@ -89,9 +92,11 @@ def create_server(body: ServerIn, session: Session = Depends(get_session)) -> di
         auth_method=body.auth_method,
         secret_ciphertext="",
         reachability="unknown",
+        region=lookup_region(host),
     )
     session.add(server)
     _bind_auth(session, server, body, creating=True)
+    _store_components(server, body.auto_install, body.component_ids)
     try:
         session.flush()
     except IntegrityError as exc:
@@ -145,6 +150,7 @@ def update_server(server_id: str, body: ServerUpdate, session: Session = Depends
     except FieldError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     connection_changed = _bind_auth(session, server, body, creating=False) or connection_changed
+    components_changed = _apply_components(server, body)
     if connection_changed:
         server.host_key_fingerprint = None
         server.reachability = "unknown"
@@ -152,7 +158,7 @@ def update_server(server_id: str, body: ServerUpdate, session: Session = Depends
         server.compose_version = None
         server.last_checked_at = None
         session.execute(delete(ServerContainer).where(ServerContainer.server_id == server.id))
-    job = _enqueue(session, server, "test_connection") if connection_changed else None
+    job = _enqueue(session, server, "test_connection") if connection_changed or components_changed else None
     try:
         session.commit()
     except IntegrityError as exc:
@@ -185,6 +191,15 @@ def test_connection(server_id: str, session: Session = Depends(get_session)) -> 
 def inspect_server(server_id: str, session: Session = Depends(get_session)) -> dict:
     server = _get(session, server_id)
     job = _enqueue(session, server, "inspect")
+    session.commit()
+    session.refresh(job)
+    return job_out(job)
+
+
+@router.post("/{server_id}/install-components", response_model=JobOut)
+def install_components(server_id: str, session: Session = Depends(get_session)) -> dict:
+    server = _get(session, server_id)
+    job = _enqueue(session, server, "install_components")
     session.commit()
     session.refresh(job)
     return job_out(job)
@@ -233,6 +248,8 @@ def _apply_update(server: Server, body: ServerUpdate) -> bool:
     if body.intranet_host is not None:
         host = clean_host(body.intranet_host)
         changed = changed or host != server.intranet_host
+        if host != server.intranet_host:
+            server.region = lookup_region(host)
         server.intranet_host = host
     if body.ssh_port is not None:
         port = clean_port(body.ssh_port)
@@ -243,6 +260,30 @@ def _apply_update(server: Server, body: ServerUpdate) -> bool:
         changed = changed or user != server.ssh_user
         server.ssh_user = user
     return changed
+
+
+def _store_components(server: Server, auto_install: bool, component_ids: list[str]) -> None:
+    if not auto_install:
+        server.auto_install = False
+        server.install_component_ids = "[]"
+        return
+    if not component_ids:
+        raise HTTPException(status_code=422, detail="请选择要安装的组件")
+    try:
+        chosen = normalize_selection(component_ids)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    server.auto_install = True
+    server.install_component_ids = json.dumps(chosen)
+
+
+def _apply_components(server: Server, body: ServerUpdate) -> bool:
+    if body.auto_install is None:
+        return False
+    previous = (bool(server.auto_install), server.install_component_ids)
+    _store_components(server, body.auto_install, body.component_ids or [])
+    current = (bool(server.auto_install), server.install_component_ids)
+    return bool(server.auto_install) and current != previous
 
 
 def _enqueue(session: Session, server: Server, action: str) -> OpsJob:

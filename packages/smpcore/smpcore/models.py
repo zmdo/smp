@@ -80,6 +80,10 @@ class Server(Base):
     disk_total_bytes: Mapped[int | None] = mapped_column(BigInteger)
     disk_used_bytes: Mapped[int | None] = mapped_column(BigInteger)
     metrics_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    region: Mapped[str | None] = mapped_column(String(80))
+    auto_install: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+    install_component_ids: Mapped[str] = mapped_column(Text, nullable=False, default="[]", server_default="[]")
+    component_status: Mapped[str] = mapped_column(Text, nullable=False, default="{}", server_default="{}")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
     )
@@ -120,7 +124,7 @@ class OpsJob(Base):
     __tablename__ = "ops_jobs"
     __table_args__ = (
         CheckConstraint(
-            "action IN ('test_connection', 'inspect', 'deploy', 'start', 'stop', 'restart', 'logs')",
+            "action IN ('test_connection', 'inspect', 'deploy', 'start', 'stop', 'restart', 'logs', 'install_components')",
             name="ck_ops_jobs_action",
         ),
         CheckConstraint(
