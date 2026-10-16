@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
-import { ApiError, api, formatTime } from "../api";
+import { ApiError, api, formatTime } from "../../api";
 
 interface Address {
   chain: string;

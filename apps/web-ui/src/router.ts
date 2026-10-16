@@ -1,19 +1,19 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuth } from "./stores/auth";
-import AccountView from "./views/AccountView.vue";
-import CardAccountView from "./views/CardAccountView.vue";
-import CryptoAccountView from "./views/CryptoAccountView.vue";
-import DashboardView from "./views/DashboardView.vue";
-import KeyListView from "./views/KeyListView.vue";
-import LoginView from "./views/LoginView.vue";
-import McpSettingsView from "./views/McpSettingsView.vue";
-import QuantOverviewView from "./views/QuantOverviewView.vue";
-import QuantStrategyView from "./views/QuantStrategyView.vue";
-import ServerDetailView from "./views/ServerDetailView.vue";
-import ServerTerminalView from "./views/ServerTerminalView.vue";
-import ServerFormView from "./views/ServerFormView.vue";
-import ServerListView from "./views/ServerListView.vue";
-import WalletDetailView from "./views/WalletDetailView.vue";
+import CardAccountView from "./views/accounts/CardAccountView.vue";
+import CryptoAccountView from "./views/accounts/CryptoAccountView.vue";
+import WalletDetailView from "./views/accounts/WalletDetailView.vue";
+import LoginView from "./views/auth/LoginView.vue";
+import DashboardView from "./views/overview/DashboardView.vue";
+import QuantOverviewView from "./views/quant/QuantOverviewView.vue";
+import QuantStrategyView from "./views/quant/QuantStrategyView.vue";
+import KeyListView from "./views/servers/KeyListView.vue";
+import ServerDetailView from "./views/servers/ServerDetailView.vue";
+import ServerFormView from "./views/servers/ServerFormView.vue";
+import ServerListView from "./views/servers/ServerListView.vue";
+import ServerTerminalView from "./views/servers/ServerTerminalView.vue";
+import AccountView from "./views/settings/AccountView.vue";
+import McpSettingsView from "./views/settings/McpSettingsView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),

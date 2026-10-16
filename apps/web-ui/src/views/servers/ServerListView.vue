@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ApiError, api, formatTime, reachabilityLabel, type ServerSummary } from "../api";
-import StatusPill from "../components/StatusPill.vue";
-import UsageMeter from "../components/UsageMeter.vue";
-import { byteCaption, percentOf } from "../usage";
+import { ApiError, api, formatTime, reachabilityLabel, type ServerSummary } from "../../api";
+import StatusPill from "../../components/StatusPill.vue";
+import UsageMeter from "../../components/UsageMeter.vue";
+import { byteCaption, percentOf } from "../../usage";
 
 const router = useRouter();
 const servers = ref<ServerSummary[]>([]);

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import QRCode from "qrcode";
 import { onMounted, ref } from "vue";
-import { ApiError, api } from "../api";
-import { useAuth } from "../stores/auth";
+import { ApiError, api } from "../../api";
+import { useAuth } from "../../stores/auth";
 
 const auth = useAuth();
 const error = ref("");

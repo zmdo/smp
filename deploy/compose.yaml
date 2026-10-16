@@ -45,7 +45,7 @@ services:
       COMPONENTS_DIR: /components
     volumes:
       - ops-keys:/data
-      - ../components:/components:ro
+      - ./components:/components:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -70,7 +70,7 @@ services:
       WALLET_DERIVER_SCRIPT: /opt/wallet-deriver/derive.mjs
       COMPONENTS_DIR: /components
     volumes:
-      - ../components:/components:ro
+      - ./components:/components:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

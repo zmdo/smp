@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ApiError, api, formatTime, type SshKey } from "../api";
+import { ApiError, api, formatTime, type SshKey } from "../../api";
 
 const keys = ref<SshKey[]>([]);
 const error = ref("");

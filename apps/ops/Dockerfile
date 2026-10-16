@@ -7,7 +7,7 @@ WORKDIR /src/ops
 
 COPY packages/smpcore /src/smpcore
 COPY apps/ops /src/ops
-COPY components /components
+COPY deploy/components /components
 
 ENV COMPONENTS_DIR=/components
 

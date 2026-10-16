@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { ApiError, api } from "../api";
-import places from "../geo/places.json";
+import { ApiError, api } from "../../api";
+import places from "../../geo/places.json";
 
 const countries = places.countries;
 const usStates = places.usStates;

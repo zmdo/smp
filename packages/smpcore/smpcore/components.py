@@ -1,4 +1,4 @@
-"""Load installable server components from the components directory.
+"""Load installable server components from deploy/components.
 
 The install and detect commands live in those files. This module only reads
 the directory so a new component can be added without changing the program.
@@ -38,7 +38,7 @@ def components_dir() -> Path:
             raise FileNotFoundError(f"组件目录不存在：{path}")
         return path
     for parent in Path(__file__).resolve().parents:
-        candidate = parent / "components"
+        candidate = parent / "deploy" / "components"
         if candidate.is_dir() and any(candidate.glob("*/component.json")):
             return candidate
     raise FileNotFoundError("没有找到组件目录")

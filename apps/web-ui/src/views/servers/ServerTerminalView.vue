@@ -4,7 +4,7 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { api, type ServerSummary } from "../api";
+import { api, type ServerSummary } from "../../api";
 
 const route = useRoute();
 const host = ref<HTMLElement | null>(null);

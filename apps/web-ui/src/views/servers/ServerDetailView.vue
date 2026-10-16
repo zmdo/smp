@@ -13,10 +13,10 @@ import {
   type ComponentInfo,
   type Job,
   type ServerDetail,
-} from "../api";
-import StatusPill from "../components/StatusPill.vue";
-import UsageMeter from "../components/UsageMeter.vue";
-import { byteCaption, percentOf } from "../usage";
+} from "../../api";
+import StatusPill from "../../components/StatusPill.vue";
+import UsageMeter from "../../components/UsageMeter.vue";
+import { byteCaption, percentOf } from "../../usage";
 
 const route = useRoute();
 const router = useRouter();

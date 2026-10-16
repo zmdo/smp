@@ -1,1 +1,1 @@
-components/**/*.sh text eol=lf
+deploy/components/**/*.sh text eol=lf

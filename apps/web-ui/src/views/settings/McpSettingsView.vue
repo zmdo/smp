@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ApiError, api } from "../api";
+import { ApiError, api } from "../../api";
 
 interface McpSettings {
   enabled: boolean;
