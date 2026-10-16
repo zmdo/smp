@@ -174,11 +174,11 @@ async function submit() {
   submitting.value = true;
   const body: Record<string, unknown> = {
     name: name.value,
-    intranet_host: intranetHost.value,
     ssh_port: Number(sshPort.value),
     ssh_user: sshUser.value,
     auth_method: authMethod.value,
   };
+  if (!isEdit.value) body.intranet_host = intranetHost.value;
   if (authMethod.value === "password") {
     if (secret.value) body.secret = secret.value;
   } else if (keySource.value === "existing") {
@@ -187,13 +187,15 @@ async function submit() {
     body.secret = secret.value;
     body.ssh_key_name = keyName.value;
   }
-  body.auto_install = autoInstall.value;
-  body.component_ids = autoInstall.value ? selectedComponents.value : [];
   body.group_id = groupId.value || null;
-  if (autoInstall.value && selectedComponents.value.length === 0) {
-    error.value = "请选择要安装的组件";
-    submitting.value = false;
-    return;
+  if (!isEdit.value) {
+    body.auto_install = autoInstall.value;
+    body.component_ids = autoInstall.value ? selectedComponents.value : [];
+    if (autoInstall.value && selectedComponents.value.length === 0) {
+      error.value = "请选择要安装的组件";
+      submitting.value = false;
+      return;
+    }
   }
   try {
     const path = isEdit.value ? `/api/servers/${serverId.value}` : "/api/servers";
@@ -218,7 +220,7 @@ async function submit() {
       <h1><i class="mark"></i>{{ isEdit ? "编辑服务器" : "登记服务器" }}</h1>
     </header>
     <div class="panel-body">
-      <p class="muted" style="margin-top: 0">通过 SSH 连接这台机器，公网或内网地址都可以。需要 Docker 时可以在下面勾选自动安装，也可以连上之后再装。</p>
+      <p class="muted" style="margin-top: 0">{{ isEdit ? "地址登记后不能修改。登录方式和分组仍可以调整。" : "通过 SSH 连接这台机器，公网或内网地址都可以。需要 Docker 时可以在下面勾选自动安装，也可以连上之后再装。" }}</p>
       <form class="panel-form" @submit.prevent="submit">
         <p v-if="error" class="banner error">{{ error }}</p>
         <p v-if="notice" class="banner ok">{{ notice }}</p>
@@ -230,7 +232,7 @@ async function submit() {
             <option v-for="group in groups" :key="group.id" :value="group.id">{{ group.name }}</option>
           </select>
         </label>
-        <label>地址<input v-model="intranetHost" required placeholder="10.0.0.8 或 trade.example.com" /></label>
+        <label>地址<input v-model="intranetHost" :disabled="isEdit" required placeholder="10.0.0.8 或 trade.example.com" /></label>
         <label>SSH 端口<input v-model.number="sshPort" type="number" min="1" max="65535" required /></label>
         <label>SSH 用户<input v-model="sshUser" required maxlength="64" /></label>
         <div class="choices">
@@ -261,20 +263,22 @@ async function submit() {
           口令
           <input v-model="secret" type="password" :placeholder="isEdit ? '留空则不修改' : ''" />
         </label>
-        <label class="check">
-          <input v-model="autoInstall" type="checkbox" @change="fillComponents" />
-          自动安装必要组件
-        </label>
-        <div v-if="autoInstall" class="component-picks">
-          <label v-for="item in components" :key="item.id">
-            <input v-model="selectedComponents" type="checkbox" :value="item.id" />
-            <span>
-              <strong>{{ item.name }}</strong>
-              <span class="muted">{{ item.summary }}</span>
-            </span>
+        <template v-if="!isEdit">
+          <label class="check">
+            <input v-model="autoInstall" type="checkbox" @change="fillComponents" />
+            自动安装必要组件
           </label>
-          <p v-if="components.length === 0" class="muted">没有可安装的组件。</p>
-        </div>
+          <div v-if="autoInstall" class="component-picks">
+            <label v-for="item in components" :key="item.id">
+              <input v-model="selectedComponents" type="checkbox" :value="item.id" />
+              <span>
+                <strong>{{ item.name }}</strong>
+                <span class="muted">{{ item.summary }}</span>
+              </span>
+            </label>
+            <p v-if="components.length === 0" class="muted">没有可安装的组件。</p>
+          </div>
+        </template>
         <div class="row">
           <button v-if="!isEdit" class="secondary" type="button" :disabled="testing || submitting" @click="testConnection">
             {{ testing ? "测试中" : "测试连接" }}

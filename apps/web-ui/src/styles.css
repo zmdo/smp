@@ -303,6 +303,10 @@ input:focus, textarea:focus, select:focus, .search:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(0, 94, 235, 0.12);
 }
+input:disabled, select:disabled, textarea:disabled {
+  background: #f4f5f7;
+  color: var(--muted);
+}
 
 button.secondary {
   height: 32px;

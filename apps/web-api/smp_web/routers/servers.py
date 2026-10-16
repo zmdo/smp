@@ -294,10 +294,8 @@ def _apply_update(server: Server, body: ServerUpdate) -> bool:
         server.name = clean_name(body.name)
     if body.intranet_host is not None:
         host = clean_host(body.intranet_host)
-        changed = changed or host != server.intranet_host
         if host != server.intranet_host:
-            server.region = lookup_region(host)
-        server.intranet_host = host
+            raise HTTPException(status_code=422, detail="地址登记后不能修改")
     if body.ssh_port is not None:
         port = clean_port(body.ssh_port)
         changed = changed or port != server.ssh_port
