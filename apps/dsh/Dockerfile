@@ -11,6 +11,6 @@ COPY apps/dsh/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV DSH_HOME=/var/lib/dsh \
-    DSH_PUBLIC_URL=http://127.0.0.1:8080/dsh/
+    DSH_PUBLIC_URL=http://127.0.0.1:8080/
 EXPOSE 3080
 ENTRYPOINT ["/entrypoint.sh"]
