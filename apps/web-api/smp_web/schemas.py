@@ -135,6 +135,13 @@ class ServerOut(BaseModel):
     compose_version: str | None
     reachability: str
     last_checked_at: datetime | None
+    cpu_cores: int | None = None
+    cpu_percent: int | None = None
+    mem_total_bytes: int | None = None
+    mem_used_bytes: int | None = None
+    disk_total_bytes: int | None = None
+    disk_used_bytes: int | None = None
+    metrics_at: datetime | None = None
     container_count: int | None
     created_at: datetime
 

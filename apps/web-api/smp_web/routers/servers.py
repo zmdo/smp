@@ -16,6 +16,33 @@ from smpcore.models import OpsJob, Server, ServerContainer
 
 router = APIRouter(prefix="/api/servers", dependencies=[Depends(require_user)])
 
+_METRIC_COLUMNS = {
+    "cpu_cores": "INTEGER",
+    "cpu_percent": "INTEGER",
+    "mem_total_bytes": "BIGINT",
+    "mem_used_bytes": "BIGINT",
+    "disk_total_bytes": "BIGINT",
+    "disk_used_bytes": "BIGINT",
+    "metrics_at": "DATETIME",
+}
+
+
+def ensure_server_metric_columns() -> None:
+    from sqlalchemy import inspect, text
+
+    from smp_web.deps import engine
+
+    inspector = inspect(engine)
+    if "servers" not in set(inspector.get_table_names()):
+        return
+    present = {column["name"] for column in inspector.get_columns("servers")}
+    missing = [name for name in _METRIC_COLUMNS if name not in present]
+    if not missing:
+        return
+    with engine.begin() as connection:
+        for name in missing:
+            connection.execute(text(f"ALTER TABLE servers ADD COLUMN {name} {_METRIC_COLUMNS[name]}"))
+
 
 @router.get("", response_model=list[ServerOut])
 @router.get("/", response_model=list[ServerOut], include_in_schema=False)

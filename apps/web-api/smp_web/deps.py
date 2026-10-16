@@ -60,6 +60,13 @@ def server_out(server, container_count: int | None) -> dict:
         "compose_version": server.compose_version,
         "reachability": server.reachability,
         "last_checked_at": server.last_checked_at,
+        "cpu_cores": server.cpu_cores,
+        "cpu_percent": server.cpu_percent,
+        "mem_total_bytes": server.mem_total_bytes,
+        "mem_used_bytes": server.mem_used_bytes,
+        "disk_total_bytes": server.disk_total_bytes,
+        "disk_used_bytes": server.disk_used_bytes,
+        "metrics_at": server.metrics_at,
         "container_count": container_count,
         "created_at": server.created_at,
     }

@@ -7,12 +7,14 @@ import secrets
 import threading
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket
 from pydantic import BaseModel, Field
 
 from smp_ops.config import settings
 from smp_ops.crypto import decrypt, encrypt, load_fernet
+from smp_ops.metrics import metrics_loop
 from smp_ops.ssh import OpsSSHError, fingerprint_of, load_private_key
+from smp_ops.terminal import serve_terminal
 from smp_ops.worker import build_session_factory, schedule_loop, worker_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -60,6 +62,14 @@ async def lifespan(_: FastAPI):
             daemon=True,
         )
     )
+    threads.append(
+        threading.Thread(
+            target=metrics_loop,
+            args=(stop, sessions, fernet),
+            name="ops-metrics",
+            daemon=True,
+        )
+    )
     for thread in threads:
         thread.start()
     log.info("ops worker started")
@@ -92,6 +102,15 @@ def encrypt_secret(body: EncryptIn) -> EncryptOut:
     else:
         raise HTTPException(status_code=422, detail="认证方式只能是私钥或口令")
     return EncryptOut(ciphertext=encrypt(fernet, plaintext), fingerprint=fingerprint)
+
+
+@app.websocket("/internal/terminal/{server_id}")
+async def terminal(websocket: WebSocket, server_id: str) -> None:
+    token = websocket.headers.get("x-internal-token") or ""
+    if not token or not secrets.compare_digest(token, settings.internal_token):
+        await websocket.close(code=4401)
+        return
+    await serve_terminal(websocket, sessions, fernet, server_id)
 
 
 @app.post("/internal/secrets/decrypt", response_model=DecryptOut, dependencies=[Depends(require_token)])

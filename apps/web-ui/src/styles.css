@@ -232,6 +232,17 @@ table.clickable tbody tr { cursor: pointer; }
 table.clickable tbody tr:hover td { background: #f7f9fc; }
 td a.op { color: var(--primary); text-decoration: none; }
 td a.op:hover { text-decoration: underline; }
+td.ops { white-space: nowrap; }
+td.ops a.op + a.op { margin-left: 10px; }
+.meter { min-width: 148px; }
+.meter-label { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.meter-track { height: 6px; border-radius: 99px; background: #eef0f3; overflow: hidden; }
+.meter-bar { display: block; height: 100%; border-radius: 99px; }
+.meter-bar.ok { background: var(--green); }
+.meter-bar.warn { background: var(--warn); }
+.meter-bar.hot { background: var(--red); }
+.terminal-page { display: flex; flex-direction: column; min-height: calc(100vh - 92px); }
+.terminal-host { flex: 1; min-height: 420px; background: #1e1e1e; border-radius: 4px; padding: 8px; overflow: hidden; }
 
 .muted { color: var(--muted); }
 .mono { font-family: Consolas, "Cascadia Mono", monospace; word-break: break-all; }

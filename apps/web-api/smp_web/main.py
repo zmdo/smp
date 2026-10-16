@@ -6,15 +6,17 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from smp_web.accounts import ensure_default_account
 from smp_web.routers.cards import ensure_virtual_card_columns
+from smp_web.routers.servers import ensure_server_metric_columns
 from smp_web.config import settings
 from smp_web.deps import SessionLocal
-from smp_web.routers import auth, cards, jobs, keys, mcp, servers, wallets
+from smp_web.routers import auth, cards, jobs, keys, mcp, servers, terminal, wallets
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     ensure_default_account()
     ensure_virtual_card_columns()
+    ensure_server_metric_columns()
     mcp.ensure_mcp_settings()
     yield
 
@@ -35,6 +37,7 @@ app.include_router(cards.router)
 app.include_router(wallets.router)
 app.include_router(jobs.router)
 app.include_router(mcp.router)
+app.include_router(terminal.router)
 
 
 @app.middleware("http")

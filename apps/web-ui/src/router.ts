@@ -10,6 +10,7 @@ import McpSettingsView from "./views/McpSettingsView.vue";
 import QuantOverviewView from "./views/QuantOverviewView.vue";
 import QuantStrategyView from "./views/QuantStrategyView.vue";
 import ServerDetailView from "./views/ServerDetailView.vue";
+import ServerTerminalView from "./views/ServerTerminalView.vue";
 import ServerFormView from "./views/ServerFormView.vue";
 import ServerListView from "./views/ServerListView.vue";
 import WalletDetailView from "./views/WalletDetailView.vue";
@@ -23,6 +24,7 @@ export const router = createRouter({
     { path: "/servers", name: "servers", component: ServerListView },
     { path: "/servers/new", name: "server-new", component: ServerFormView },
     { path: "/servers/:id/edit", name: "server-edit", component: ServerFormView },
+    { path: "/servers/:id/terminal", name: "server-terminal", component: ServerTerminalView },
     { path: "/servers/:id", name: "server-detail", component: ServerDetailView },
     { path: "/keys", name: "keys", component: KeyListView },
     { path: "/account", redirect: "/settings" },

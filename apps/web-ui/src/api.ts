@@ -44,6 +44,13 @@ export interface ServerSummary {
   compose_version: string | null;
   reachability: string;
   last_checked_at: string | null;
+  cpu_cores: number | null;
+  cpu_percent: number | null;
+  mem_total_bytes: number | null;
+  mem_used_bytes: number | null;
+  disk_total_bytes: number | null;
+  disk_used_bytes: number | null;
+  metrics_at: string | null;
   container_count: number | null;
   created_at: string;
 }

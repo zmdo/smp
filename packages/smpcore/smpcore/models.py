@@ -10,6 +10,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    BigInteger,
     Integer,
     String,
     Text,
@@ -72,6 +73,13 @@ class Server(Base):
     compose_version: Mapped[str | None] = mapped_column(String(64))
     reachability: Mapped[str] = mapped_column(String(32), nullable=False, default="unknown")
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cpu_cores: Mapped[int | None] = mapped_column(Integer)
+    cpu_percent: Mapped[int | None] = mapped_column(Integer)
+    mem_total_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    mem_used_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    disk_total_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    disk_used_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    metrics_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
     )
