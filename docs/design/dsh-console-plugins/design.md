@@ -1,8 +1,8 @@
 # 控制台前端改为 DeepSeek Harness 插件（dsh-console-plugins）
 
-状态：待评审。本文只描述设计，不包含实现。
+状态：已确定。本文只描述设计，不包含实现。
 
-调查依据是仓库 `tmp/deepseek-harness` 中的 `deepseek-ai/deepseek-harness`（`0.2.1-alpha.4`）。该目录在 `.gitignore` 里，不进入本仓库。
+调查依据是仓库 `tmp/deepseek-harness` 中的 `deepseek-ai/deepseek-harness`（`0.2.1-alpha.5`，`1517a4db`）。该目录在 `.gitignore` 里，不进入本仓库。
 
 ## 1. 背景
 
@@ -26,6 +26,9 @@
 - 不把 Harness 的会话界面抽成控制台里的一块组件。
 - 不改交易所只读、不下单、不提币的边界。
 - 不在本文里实现插件或改动现有页面。
+- 不把对话界面拆成独立插件，再配一个对话代理。它依赖 `dsh web` 注入的启动图，以及宿主进程里的会话流。
+- 不把 `dsh-base` 当成可调用的 HTTP 服务。它是 `web` profile 的第一层插件组合，和网页在同一个进程里。
+- 不在控制台里重写一套对话界面，也不把整页 `dsh` 嵌进现有单页应用的「军师」栏目。
 
 ## 4. 已定决策
 

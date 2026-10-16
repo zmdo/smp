@@ -9,3 +9,6 @@ dist/
 .mypy_cache/
 data/
 tmp/
+.DS_Store
+.pnpm-store/
+apps/console-plugins/shell/lib/

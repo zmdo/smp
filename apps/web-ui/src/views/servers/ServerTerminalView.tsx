@@ -36,7 +36,7 @@ export function ServerTerminalView() {
     term.open(element);
     fit.fit();
     const protocol = location.protocol === "https:" ? "wss" : "ws";
-    socket = new WebSocket(`${protocol}://${location.host}/api/servers/${id}/terminal`);
+    socket = new WebSocket(`${protocol}://${location.host}/console-api/servers/${id}/terminal`);
     socket.binaryType = "arraybuffer";
     const sendSize = () => fit?.fit();
     socket.onopen = () => sendSize();

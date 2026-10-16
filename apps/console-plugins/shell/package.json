@@ -1,0 +1,44 @@
+{
+  "name": "@smp/console-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "策略控制台壳：侧栏、顶部 Tab 和空的内容槽",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "cordis.patch.yml"
+  ],
+  "engines": {
+    "dsh": "0.2.1-alpha.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.18",
+    "esbuild": "^0.25.10",
+    "react": "^18.3.1"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "lightweight-charts": "^5.2.1",
+    "qrcode": "^1.5.4"
+  }
+}

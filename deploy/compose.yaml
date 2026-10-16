@@ -83,6 +83,28 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # 只在组合网络里听 3080。站点入口是 8080 上的 /dsh/，不把 3080 公布到宿主机。
+  dsh:
+    build:
+      context: ..
+      dockerfile: apps/dsh/Dockerfile
+    environment:
+      DSH_HOME: /var/lib/dsh
+      DSH_PUBLIC_URL: http://127.0.0.1:8080/dsh/
+    volumes:
+      - dsh-home:/var/lib/dsh
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"const b=require('fs').readFileSync('/tmp/dsh-bind','utf8').trim(); fetch('http://'+b+':3080/').then(r=>process.exit(r.status===401?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+    restart: unless-stopped
+
   web-ui:
     build:
       context: ..
@@ -92,8 +114,11 @@ services:
     depends_on:
       web-api:
         condition: service_healthy
+      dsh:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   pgdata:
   ops-keys:
+  dsh-home:
