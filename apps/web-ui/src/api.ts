@@ -52,6 +52,8 @@ export interface ServerSummary {
   disk_used_bytes: number | null;
   metrics_at: string | null;
   region: string | null;
+  group_id: string | null;
+  group_name: string | null;
   auto_install: boolean;
   component_ids: string[];
   component_status: Record<string, { installed: boolean; detail: string }>;
@@ -79,6 +81,12 @@ export interface Job {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+}
+
+export interface ServerGroup {
+  id: string;
+  name: string;
+  created_at: string;
 }
 
 export interface ServerDetail extends ServerSummary {

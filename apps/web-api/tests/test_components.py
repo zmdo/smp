@@ -1,7 +1,7 @@
 from smpcore.components import load_catalog, normalize_selection
 from smpcore.ensure import ensure_runtime_schema
 from smp_web.region import format_place, lookup_region
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 
 
 def test_catalog_reads_script_files():
@@ -62,4 +62,5 @@ def test_sqlite_accepts_install_job_action():
     with engine.begin() as connection:
         connection.execute(text("INSERT INTO ops_jobs (id, action) VALUES ('job', 'install_components')"))
         names = {row[1] for row in connection.execute(text("PRAGMA table_info(servers)"))}
-    assert {"region", "auto_install", "install_component_ids", "component_status"} <= names
+    assert {"region", "auto_install", "install_component_ids", "component_status", "group_id"} <= names
+    assert "server_groups" in set(inspect(engine).get_table_names())

@@ -70,6 +70,8 @@ def server_out(server, container_count: int | None) -> dict:
         "disk_used_bytes": server.disk_used_bytes,
         "metrics_at": server.metrics_at,
         "region": server.region,
+        "group_id": server.group_id,
+        "group_name": server.group.name if server.group is not None else None,
         "auto_install": bool(server.auto_install),
         "component_ids": _json_list(server.install_component_ids),
         "component_status": _json_status(server.component_status),

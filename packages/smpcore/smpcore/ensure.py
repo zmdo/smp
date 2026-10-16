@@ -12,13 +12,18 @@ _SERVER_COLUMNS = {
     "auto_install": "BOOLEAN NOT NULL DEFAULT 0",
     "install_component_ids": "TEXT NOT NULL DEFAULT '[]'",
     "component_status": "TEXT NOT NULL DEFAULT '{}'",
+    "group_id": "CHAR(32)",
 }
 
 
 def ensure_runtime_schema(engine: Engine) -> None:
+    from smpcore.models import ServerGroup
+
     inspector = inspect(engine)
     tables = set(inspector.get_table_names())
     with engine.begin() as connection:
+        if "server_groups" not in tables:
+            ServerGroup.__table__.create(connection)
         if "servers" in tables:
             present = {column["name"] for column in inspector.get_columns("servers")}
             for name, column_type in _SERVER_COLUMNS.items():

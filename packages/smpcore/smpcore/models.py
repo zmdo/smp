@@ -44,6 +44,19 @@ class SshKey(Base):
     servers: Mapped[list[Server]] = relationship(back_populates="ssh_key")
 
 
+class ServerGroup(Base):
+    __tablename__ = "server_groups"
+    __table_args__ = (UniqueConstraint("name", name="uq_server_groups_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, server_default=func.now()
+    )
+
+    servers: Mapped[list[Server]] = relationship(back_populates="group")
+
+
 class Server(Base):
     __tablename__ = "servers"
     __table_args__ = (
@@ -81,6 +94,9 @@ class Server(Base):
     disk_used_bytes: Mapped[int | None] = mapped_column(BigInteger)
     metrics_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     region: Mapped[str | None] = mapped_column(String(80))
+    group_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("server_groups.id", ondelete="SET NULL"), index=True
+    )
     auto_install: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
     install_component_ids: Mapped[str] = mapped_column(Text, nullable=False, default="[]", server_default="[]")
     component_status: Mapped[str] = mapped_column(Text, nullable=False, default="{}", server_default="{}")
@@ -95,6 +111,7 @@ class Server(Base):
         back_populates="server", cascade="all, delete-orphan"
     )
     ssh_key: Mapped[SshKey | None] = relationship(back_populates="servers")
+    group: Mapped[ServerGroup | None] = relationship(back_populates="servers")
     jobs: Mapped[list[OpsJob]] = relationship(back_populates="server", cascade="all, delete-orphan")
 
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ApiError, api, type ComponentInfo, type ServerDetail, type SshKey } from "../../api";
+import { ApiError, api, type ComponentInfo, type ServerDetail, type ServerGroup, type SshKey } from "../../api";
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +21,8 @@ const secret = ref("");
 const autoInstall = ref(false);
 const components = ref<ComponentInfo[]>([]);
 const selectedComponents = ref<string[]>([]);
+const groups = ref<ServerGroup[]>([]);
+const groupId = ref("");
 const error = ref("");
 const notice = ref("");
 const submitting = ref(false);
@@ -51,6 +53,7 @@ onMounted(async () => {
   try {
     keys.value = await api<SshKey[]>("/api/ssh-keys");
     components.value = await api<ComponentInfo[]>("/api/components");
+    groups.value = await api<ServerGroup[]>("/api/server-groups");
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : "密钥列表加载失败";
   }
@@ -71,6 +74,7 @@ onMounted(async () => {
       selectedKeyId.value = server.ssh_key_id;
     }
     autoInstall.value = server.auto_install;
+    groupId.value = server.group_id || "";
     selectedComponents.value = server.component_ids.length
       ? [...server.component_ids]
       : components.value.map((item) => item.id);
@@ -185,6 +189,7 @@ async function submit() {
   }
   body.auto_install = autoInstall.value;
   body.component_ids = autoInstall.value ? selectedComponents.value : [];
+  body.group_id = groupId.value || null;
   if (autoInstall.value && selectedComponents.value.length === 0) {
     error.value = "请选择要安装的组件";
     submitting.value = false;
@@ -218,6 +223,13 @@ async function submit() {
         <p v-if="error" class="banner error">{{ error }}</p>
         <p v-if="notice" class="banner ok">{{ notice }}</p>
         <label>名称<input v-model="name" required maxlength="80" /></label>
+        <label>
+          分组
+          <select v-model="groupId">
+            <option value="">未分组</option>
+            <option v-for="group in groups" :key="group.id" :value="group.id">{{ group.name }}</option>
+          </select>
+        </label>
         <label>地址<input v-model="intranetHost" required placeholder="10.0.0.8 或 trade.example.com" /></label>
         <label>SSH 端口<input v-model.number="sshPort" type="number" min="1" max="65535" required /></label>
         <label>SSH 用户<input v-model="sshUser" required maxlength="64" /></label>

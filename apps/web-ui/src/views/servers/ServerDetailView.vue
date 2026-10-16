@@ -154,6 +154,7 @@ const showContainers = computed(() => {
       </div>
       <div class="node-grid">
         <div><span>区域</span>{{ server.region || "—" }}</div>
+        <div><span>分组</span>{{ server.group_name || "未分组" }}</div>
         <div><span>登录</span>{{ server.auth_method === "private_key" ? (server.ssh_key_name || "密钥") : "口令" }}</div>
         <div><span>Docker</span>{{ server.docker_version || "—" }}</div>
         <div><span>Compose</span>{{ server.compose_version || "—" }}</div>

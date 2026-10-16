@@ -110,6 +110,7 @@ class ServerIn(BaseModel):
     ssh_key_name: str | None = None
     auto_install: bool = False
     component_ids: list[str] = Field(default_factory=list)
+    group_id: uuid.UUID | None = None
 
 
 class ServerTestIn(BaseModel):
@@ -137,6 +138,17 @@ class ServerUpdate(BaseModel):
     ssh_key_name: str | None = None
     auto_install: bool | None = None
     component_ids: list[str] | None = None
+    group_id: uuid.UUID | None = None
+
+
+class ServerGroupIn(BaseModel):
+    name: str
+
+
+class ServerGroupOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    created_at: datetime
 
 
 class ServerOut(BaseModel):
@@ -161,6 +173,8 @@ class ServerOut(BaseModel):
     disk_used_bytes: int | None = None
     metrics_at: datetime | None = None
     region: str | None = None
+    group_id: uuid.UUID | None = None
+    group_name: str | None = None
     auto_install: bool = False
     component_ids: list[str] = Field(default_factory=list)
     component_status: dict[str, dict] = Field(default_factory=dict)

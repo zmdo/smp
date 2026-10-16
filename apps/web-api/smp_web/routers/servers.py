@@ -24,7 +24,7 @@ from smp_web.schemas import (
 from smp_web.secrets_client import encrypt_secret, test_ssh
 from smp_web.validation import FieldError, clean_host, clean_name, clean_port, clean_user
 from smpcore.components import normalize_selection
-from smpcore.models import OpsJob, Server, ServerContainer
+from smpcore.models import OpsJob, Server, ServerContainer, ServerGroup
 
 router = APIRouter(prefix="/api/servers", dependencies=[Depends(require_user)])
 
@@ -117,6 +117,7 @@ def create_server(body: ServerIn, session: Session = Depends(get_session)) -> di
     session.add(server)
     _bind_auth(session, server, body, creating=True)
     _store_components(server, body.auto_install, body.component_ids)
+    _assign_group(session, server, body.group_id)
     try:
         session.flush()
     except IntegrityError as exc:
@@ -171,6 +172,8 @@ def update_server(server_id: str, body: ServerUpdate, session: Session = Depends
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     connection_changed = _bind_auth(session, server, body, creating=False) or connection_changed
     components_changed = _apply_components(server, body)
+    if "group_id" in body.model_fields_set:
+        _assign_group(session, server, body.group_id)
     if connection_changed:
         server.host_key_fingerprint = None
         server.reachability = "unknown"
@@ -243,6 +246,16 @@ def _test_ciphertext(session: Session, body: ServerTestIn) -> str:
         raise HTTPException(status_code=422, detail="请填写口令")
     ciphertext, _fingerprint = encrypt_secret(body.secret, "password")
     return ciphertext
+
+
+def _assign_group(session: Session, server: Server, group_id: uuid.UUID | None) -> None:
+    if group_id is None:
+        server.group_id = None
+        return
+    group = session.get(ServerGroup, group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="分组不存在")
+    server.group_id = group.id
 
 
 def _bind_auth(session: Session, server: Server, body: ServerIn | ServerUpdate, *, creating: bool) -> bool:

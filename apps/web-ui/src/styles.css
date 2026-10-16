@@ -233,7 +233,17 @@ table.clickable tbody tr { cursor: pointer; }
 table.clickable tbody tr:hover td { background: #f7f9fc; }
 td a.op { color: var(--primary); text-decoration: none; }
 td a.op:hover { text-decoration: underline; }
-td.ops { white-space: nowrap; }
+table.clickable tbody tr.group-head,
+table.clickable tbody tr.group-empty { cursor: default; }
+table.clickable tbody tr.group-head:hover td,
+table.clickable tbody tr.group-empty:hover td { background: #f4f7fb; }
+tr.group-head td { background: #f4f7fb; }
+tr.group-head .count { margin-left: 8px; }
+tr.group-head button.link { margin-left: 12px; height: auto; }
+tr.group-empty td { color: var(--muted); }
+.group-create { display: flex; align-items: center; gap: 8px; }
+.group-create input { width: 140px; }
+select.group-pick { height: 28px; max-width: 120px; margin-right: 8px; }
 td.ops a.op + a.op { margin-left: 10px; }
 .meter { min-width: 148px; }
 .meter-label { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 4px; }
