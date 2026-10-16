@@ -23,6 +23,7 @@ const components = ref<ComponentInfo[]>([]);
 const selectedComponents = ref<string[]>([]);
 const groups = ref<ServerGroup[]>([]);
 const groupId = ref("");
+const region = ref("");
 const error = ref("");
 const notice = ref("");
 const submitting = ref(false);
@@ -75,6 +76,7 @@ onMounted(async () => {
     }
     autoInstall.value = server.auto_install;
     groupId.value = server.group_id || "";
+    region.value = server.region || "";
     selectedComponents.value = server.component_ids.length
       ? [...server.component_ids]
       : components.value.map((item) => item.id);
@@ -188,6 +190,7 @@ async function submit() {
     body.ssh_key_name = keyName.value;
   }
   body.group_id = groupId.value || null;
+  body.region = region.value.trim();
   if (!isEdit.value) {
     body.auto_install = autoInstall.value;
     body.component_ids = autoInstall.value ? selectedComponents.value : [];
@@ -220,7 +223,7 @@ async function submit() {
       <h1><i class="mark"></i>{{ isEdit ? "编辑服务器" : "登记服务器" }}</h1>
     </header>
     <div class="panel-body">
-      <p class="muted" style="margin-top: 0">{{ isEdit ? "地址登记后不能修改。登录方式和分组仍可以调整。" : "通过 SSH 连接这台机器，公网或内网地址都可以。需要 Docker 时可以在下面勾选自动安装，也可以连上之后再装。" }}</p>
+      <p class="muted" style="margin-top: 0">{{ isEdit ? "地址登记后不能修改。区域、登录方式和分组仍可以调整。" : "通过 SSH 连接这台机器，公网或内网地址都可以。区域留空时，内网记为内网，外网按 IP 自动查询。需要 Docker 时可以在下面勾选自动安装，也可以连上之后再装。" }}</p>
       <form class="panel-form" @submit.prevent="submit">
         <p v-if="error" class="banner error">{{ error }}</p>
         <p v-if="notice" class="banner ok">{{ notice }}</p>
@@ -233,6 +236,7 @@ async function submit() {
           </select>
         </label>
         <label>地址<input v-model="intranetHost" :disabled="isEdit" required placeholder="10.0.0.8 或 trade.example.com" /></label>
+        <label>区域<input v-model="region" maxlength="80" placeholder="留空则自动判断，内网为内网" /></label>
         <label>SSH 端口<input v-model.number="sshPort" type="number" min="1" max="65535" required /></label>
         <label>SSH 用户<input v-model="sshUser" required maxlength="64" /></label>
         <div class="choices">

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from smp_web.deps import get_session, job_out, require_user, server_out
 from smp_web.key_store import require_key, store_private_key
-from smp_web.region import lookup_region
+from smp_web.region import chosen_region
 from smp_web.schemas import (
     JobOut,
     ServerCreatedOut,
@@ -112,7 +112,7 @@ def create_server(body: ServerIn, session: Session = Depends(get_session)) -> di
         auth_method=body.auth_method,
         secret_ciphertext="",
         reachability="unknown",
-        region=lookup_region(host),
+        region=_region_for(host, body.region),
     )
     session.add(server)
     _bind_auth(session, server, body, creating=True)
@@ -248,6 +248,13 @@ def _test_ciphertext(session: Session, body: ServerTestIn) -> str:
     return ciphertext
 
 
+def _region_for(host: str, written: str | None) -> str | None:
+    try:
+        return chosen_region(host, written)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 def _assign_group(session: Session, server: Server, group_id: uuid.UUID | None) -> None:
     if group_id is None:
         server.group_id = None
@@ -304,6 +311,8 @@ def _apply_update(server: Server, body: ServerUpdate) -> bool:
         user = clean_user(body.ssh_user)
         changed = changed or user != server.ssh_user
         server.ssh_user = user
+    if "region" in body.model_fields_set:
+        server.region = _region_for(server.intranet_host, body.region)
     return changed
 
 

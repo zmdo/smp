@@ -111,6 +111,7 @@ class ServerIn(BaseModel):
     auto_install: bool = False
     component_ids: list[str] = Field(default_factory=list)
     group_id: uuid.UUID | None = None
+    region: str | None = None
 
 
 class ServerTestIn(BaseModel):
@@ -139,6 +140,7 @@ class ServerUpdate(BaseModel):
     auto_install: bool | None = None
     component_ids: list[str] | None = None
     group_id: uuid.UUID | None = None
+    region: str | None = None
 
 
 class ServerGroupIn(BaseModel):

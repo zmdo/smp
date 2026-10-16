@@ -1,6 +1,6 @@
 from smpcore.components import load_catalog, normalize_selection
 from smpcore.ensure import ensure_runtime_schema
-from smp_web.region import format_place, lookup_region
+from smp_web.region import chosen_region, format_place, lookup_region
 from sqlalchemy import create_engine, inspect, text
 
 
@@ -40,6 +40,20 @@ def test_public_address_uses_lookup():
         return {"status": "success", "country": "中国", "regionName": "香港", "city": "香港"}
 
     assert lookup_region("43.128.69.189", fetch=fetch) == "中国 香港"
+
+
+def test_written_region_is_kept():
+    assert chosen_region("10.0.0.8", "  机房 A ") == "机房 A"
+
+
+def test_blank_region_uses_intranet_or_lookup():
+    assert chosen_region("10.0.0.8", "  ") == "内网"
+
+    def fetch(ip: str) -> dict:
+        assert ip == "43.128.69.189"
+        return {"status": "success", "country": "新加坡", "regionName": "", "city": "新加坡"}
+
+    assert chosen_region("43.128.69.189", None, fetch=fetch, resolve=lambda host: host) == "新加坡"
 
 
 def test_sqlite_accepts_install_job_action():

@@ -45,6 +45,21 @@ def lookup_region(
     return place or None
 
 
+def chosen_region(
+    host: str,
+    written: str | None,
+    *,
+    fetch: Callable[[str], dict] | None = None,
+    resolve: Callable[[str], str | None] | None = None,
+) -> str | None:
+    text = (written or "").strip()
+    if text:
+        if len(text) > 80:
+            raise ValueError("区域需要 1 到 80 个字符")
+        return text
+    return lookup_region(host, fetch=fetch, resolve=resolve)
+
+
 def _resolve(host: str) -> str | None:
     try:
         ipaddress.ip_address(host)
