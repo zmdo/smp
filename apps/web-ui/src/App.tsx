@@ -5,6 +5,7 @@ import { CardAccountView } from "./views/accounts/CardAccountView";
 import { CryptoAccountView } from "./views/accounts/CryptoAccountView";
 import { WalletDetailView } from "./views/accounts/WalletDetailView";
 import { LoginView } from "./views/LoginView";
+import { DeepseekHarnessView } from "./views/advisor/DeepseekHarnessView";
 import { DashboardView } from "./views/DashboardView";
 import { ExchangeView } from "./views/quant/ExchangeView";
 import { MarketView } from "./views/quant/MarketView";
@@ -65,6 +66,13 @@ function Shell() {
               <rect x="9.2" y="9.2" width="5.2" height="5.2" rx="1" stroke="currentColor" />
             </svg>
             仪表盘
+          </Link>
+          <Link to="/advisor" className={`nav-item${path.startsWith("/advisor") ? " is-on" : ""}`} onClick={() => setOpenGroup(null)}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="5" r="2.2" stroke="currentColor" />
+              <path d="M3.2 13.2c.7-2.3 2.5-3.4 4.8-3.4s4.1 1.1 4.8 3.4" stroke="currentColor" strokeLinecap="round" />
+            </svg>
+            军师
           </Link>
           <p className="nav-title">运营</p>
           <div className={`nav-group${openGroup === "quant" ? " is-open" : ""}`}>
@@ -129,6 +137,7 @@ function Shell() {
           <Routes>
             <Route path="/" element={<Navigate to="/servers" replace />} />
             <Route path="/dashboard" element={<DashboardView />} />
+            <Route path="/advisor" element={<DeepseekHarnessView />} />
             <Route path="/servers" element={<ServerListView />} />
             <Route path="/servers/new" element={<ServerFormView />} />
             <Route path="/servers/:id/edit" element={<ServerFormView />} />
@@ -162,6 +171,7 @@ function Caret() {
 
 function TopTabs({ path }: { path: string }) {
   if (path.startsWith("/dashboard")) return <nav className="tabs"><Link to="/dashboard" className="tab is-on">仪表盘</Link></nav>;
+  if (path.startsWith("/advisor")) return <nav className="tabs"><Link to="/advisor" className="tab is-on">Deepseek Harness</Link></nav>;
   if (path.startsWith("/settings")) {
     return (
       <nav className="tabs">
