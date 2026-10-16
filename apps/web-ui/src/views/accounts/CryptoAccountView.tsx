@@ -1,127 +1,155 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ApiError, api, formatTime } from "../../api";
 
-interface Wallet {
+interface WalletRow {
   id: string;
   name: string;
-  address: string;
   created_at: string;
 }
 
+interface Created {
+  id: string;
+  name: string;
+  mnemonic?: string;
+}
+
+type Mode = "list" | "create" | "import" | "backup";
+
 export function CryptoAccountView() {
-  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const navigate = useNavigate();
+  const [wallets, setWallets] = useState<WalletRow[]>([]);
   const [error, setError] = useState("");
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState("create");
+  const [mode, setMode] = useState<Mode>("list");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [mnemonic, setMnemonic] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState<{ wallet: Wallet; mnemonic: string | null } | null>(null);
-  const [backedUp, setBackedUp] = useState(false);
+  const [createdMnemonic, setCreatedMnemonic] = useState("");
+  const [createdId, setCreatedId] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   async function load() {
-    setError("");
     try {
-      setWallets(await api<Wallet[]>("/api/wallets"));
+      setWallets(await api<WalletRow[]>("/api/wallets"));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "账户加载失败");
+      setError(err instanceof ApiError ? err.message : "加载失败");
     }
   }
 
   useEffect(() => { void load(); }, []);
 
-  function startCreate() {
-    setOpen(true);
-    setMode("create");
+  function resetForm() {
     setName("");
     setPassword("");
     setMnemonic("");
-    setCreated(null);
-    setBackedUp(false);
+    setError("");
+  }
+
+  function open(next: "create" | "import") {
+    resetForm();
+    setCreatedMnemonic("");
+    setCreatedId("");
+    setMode(next);
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    setCreating(true);
+    setSubmitting(true);
     try {
-      const result = await api<{ wallet: Wallet; mnemonic: string | null }>("/api/wallets", {
+      const created = await api<Created>("/api/wallets", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), password, mnemonic: mode === "import" ? mnemonic.trim() : null }),
+        body: JSON.stringify({ name, password, mnemonic: mode === "import" ? mnemonic : null }),
       });
-      setCreated(result);
-      if (!result.mnemonic) {
-        setOpen(false);
-        window.location.assign(`/accounts/crypto/${result.wallet.id}`);
+      setPassword("");
+      setMnemonic("");
+      if (created.mnemonic) {
+        setCreatedMnemonic(created.mnemonic);
+        setCreatedId(created.id);
+        setSaved(false);
+        setMode("backup");
+      } else {
+        navigate(`/accounts/crypto/${created.id}`);
       }
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "创建失败");
+      setError(err instanceof ApiError ? err.message : "保存失败");
     } finally {
-      setCreating(false);
+      setSubmitting(false);
     }
   }
 
-  function finish() {
-    if (!created) return;
-    const id = created.wallet.id;
-    setCreated(null);
-    setOpen(false);
-    window.location.assign(`/accounts/crypto/${id}`);
+  function finishBackup() {
+    const id = createdId;
+    setCreatedMnemonic("");
+    setCreatedId("");
+    setSaved(false);
+    setMode("list");
+    if (id) navigate(`/accounts/crypto/${id}`);
   }
 
+  const words = createdMnemonic.split(" ").filter(Boolean);
+
   return (
-    <section>
-      <div className="page-head">
-        <div><h1>数字货币账户</h1><p className="muted">只在这台控制机上保存加密后的助记词。</p></div>
-        <button className="primary" type="button" onClick={startCreate}>新建账户</button>
-      </div>
+    <>
       {error && <p className="banner error">{error}</p>}
-      {wallets.length === 0 ? <section className="panel"><p className="muted">还没有账户。</p></section> : (
-        <div className="table-wrap"><table>
-          <thead><tr><th>名称</th><th>地址</th><th>创建时间</th></tr></thead>
-          <tbody>
-            {wallets.map((wallet) => (
-              <tr key={wallet.id} className="clickable" onClick={() => { window.location.assign(`/accounts/crypto/${wallet.id}`); }}>
-                <td>{wallet.name}</td>
-                <td className="mono">{wallet.address}</td>
-                <td>{formatTime(wallet.created_at)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
+      {mode === "backup" ? (
+        <section className="panel">
+          <header className="panel-head"><h1><i className="mark" />抄写助记词</h1></header>
+          <div className="panel-body">
+            <p className="sub">这是唯一一次显示这组助记词。离开本页之后，页面不再保留它。</p>
+            <ol className="mnemonic">
+              {words.map((word, index) => <li key={index}><span>{index + 1}</span>{word}</li>)}
+            </ol>
+            <label className="check"><input type="checkbox" checked={saved} onChange={(event) => setSaved(event.target.checked)} />我已经把助记词抄写到离线的地方</label>
+            <div className="row"><button className="primary" type="button" disabled={!saved} onClick={finishBackup}>完成</button></div>
+          </div>
+        </section>
+      ) : (mode === "create" || mode === "import") && (
+        <section className="panel">
+          <header className="panel-head"><h1><i className="mark" />{mode === "create" ? "创建钱包" : "导入钱包"}</h1></header>
+          <div className="panel-body">
+            <form className="panel-form" onSubmit={submit}>
+              <label>名称<input value={name} required maxLength={80} placeholder="例如 日常资金" onChange={(event) => setName(event.target.value)} /></label>
+              {mode === "import" && (
+                <label>助记词<textarea value={mnemonic} required rows={3} autoComplete="off" spellCheck={false} placeholder="12 或 24 个英文单词" onChange={(event) => setMnemonic(event.target.value)} /></label>
+              )}
+              <label>登录密码<input value={password} required type="password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} /></label>
+              <p className="sub">用当前登录密码加密助记词。密码不对就不会保存。</p>
+              <div className="row">
+                <button className="primary" type="submit" disabled={submitting}>{mode === "create" ? "创建" : "导入"}</button>
+                <button className="link" type="button" onClick={() => setMode("list")}>取消</button>
+              </div>
+            </form>
+          </div>
+        </section>
       )}
-      {open && (
-        <div className="modal-mask" onClick={() => { if (!created) setOpen(false); }}>
-          <form className="modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}>
-            {!created ? (
-              <>
-                <h2>{mode === "create" ? "新建账户" : "导入账户"}</h2>
-                <div className="mode-switch">
-                  <button type="button" className={mode === "create" ? "active" : ""} onClick={() => setMode("create")}>新建</button>
-                  <button type="button" className={mode === "import" ? "active" : ""} onClick={() => setMode("import")}>导入</button>
-                </div>
-                <label>名称<input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
-                <label>加密密码<input value={password} type="password" autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} /></label>
-                {mode === "import" && <label>助记词<textarea value={mnemonic} rows={3} placeholder="12 或 24 个英文单词" onChange={(event) => setMnemonic(event.target.value)} /></label>}
-                <div className="form-actions">
-                  <button className="secondary" type="button" onClick={() => setOpen(false)}>取消</button>
-                  <button className="primary" type="submit" disabled={creating}>{mode === "create" ? "创建" : "导入"}</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2>请抄下助记词</h2>
-                <p className="muted">这是唯一一次显示。丢失后无法恢复这个账户。</p>
-                <pre className="mnemonic">{created.mnemonic}</pre>
-                <label className="check"><input type="checkbox" checked={backedUp} onChange={(event) => setBackedUp(event.target.checked)} />我已经抄好</label>
-                <div className="form-actions"><button className="primary" type="button" disabled={!backedUp} onClick={finish}>完成</button></div>
-              </>
-            )}
-          </form>
-        </div>
-      )}
-    </section>
+      <section className="panel">
+        <header className="panel-head">
+          <h1><i className="mark" />钱包实例 <em className="count">{wallets.length}</em></h1>
+          <div className="tools">
+            <button className="primary" type="button" onClick={() => open("create")}>创建钱包</button>
+            <button className="link" type="button" onClick={() => open("import")}>导入钱包</button>
+          </div>
+        </header>
+        {wallets.length === 0 ? <p className="empty">还没有钱包实例。可以创建新钱包，或用助记词导入。</p> : (
+          <div className="table-wrap">
+            <table className="clickable">
+              <thead><tr><th>名称</th><th>创建时间</th></tr></thead>
+              <tbody>
+                {wallets.map((item) => (
+                  <tr key={item.id} onClick={() => navigate(`/accounts/crypto/${item.id}`)}>
+                    <td><Link className="op" to={`/accounts/crypto/${item.id}`} onClick={(event) => event.stopPropagation()}>{item.name}</Link></td>
+                    <td>{formatTime(item.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <footer className="panel-foot">共 {wallets.length} 条</footer>
+      </section>
+    </>
   );
 }

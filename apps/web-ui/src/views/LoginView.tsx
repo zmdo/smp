@@ -19,7 +19,7 @@ export function LoginView() {
     setError("");
     setSubmitting(true);
     try {
-      const result = await auth.login(username.trim(), password, totpCode.trim());
+      const result = await auth.login(username, password, needTotp ? totpCode : undefined);
       if (result.totp_required) {
         setNeedTotp(true);
         setError("这个账户开启了两步验证，请填写验证码");
@@ -34,16 +34,19 @@ export function LoginView() {
   }
 
   return (
-    <main className="login">
+    <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <p className="eyebrow">策略控制台</p>
-        <h1>登录</h1>
-        <label>用户名<input value={username} autoComplete="username" onChange={(event) => setUsername(event.target.value)} /></label>
-        <label>密码<input value={password} type="password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} /></label>
-        {needTotp && <label>验证码<input value={totpCode} inputMode="numeric" autoComplete="one-time-code" placeholder="6 位验证码" onChange={(event) => setTotpCode(event.target.value)} /></label>}
-        {error && <p className="form-error">{error}</p>}
+        <div className="login-brand">
+          <span className="logo-mark">策</span>
+          <h1>策略控制台</h1>
+        </div>
+        <p className="muted">使用用户名和密码登录。开启两步验证后，还需要验证码。</p>
+        {error && <p className="banner error">{error}</p>}
+        <label>用户名<input value={username} autoComplete="username" required onChange={(event) => setUsername(event.target.value)} /></label>
+        <label>密码<input value={password} type="password" autoComplete="current-password" required onChange={(event) => setPassword(event.target.value)} /></label>
+        {needTotp && <label>验证码<input value={totpCode} inputMode="numeric" autoComplete="one-time-code" maxLength={6} required onChange={(event) => setTotpCode(event.target.value)} /></label>}
         <button className="primary" type="submit" disabled={submitting}>登录</button>
       </form>
-    </main>
+    </div>
   );
 }

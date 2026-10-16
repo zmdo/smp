@@ -1,41 +1,77 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, api, formatTime } from "../../api";
-import { CopyButton } from "../../components/CopyButton";
+
+interface Address {
+  chain: string;
+  chain_label: string;
+  address: string;
+  derivation_path: string | null;
+  source: "derived" | "manual";
+}
+
+interface Account {
+  id: string;
+  name: string;
+  derivation_index: number;
+  addresses: Address[];
+}
 
 interface Wallet {
   id: string;
   name: string;
-  address: string;
   created_at: string;
+  accounts: Account[];
 }
 
 export function WalletDetailView() {
   const { id = "" } = useParams();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState("");
 
   useEffect(() => {
-    api<Wallet>(`/api/wallets/${id}`).then(setWallet).catch((err) => setError(err instanceof ApiError ? err.message : "账户加载失败"));
+    api<Wallet>(`/api/wallets/${id}`).then(setWallet).catch((err) => setError(err instanceof ApiError ? err.message : "加载失败"));
   }, [id]);
 
-  if (!wallet) return error ? <p className="banner error">{error}</p> : null;
+  async function copy(value: string) {
+    await navigator.clipboard.writeText(value);
+    setCopied(value);
+  }
+
   return (
-    <section>
-      <div className="page-head">
-        <div>
-          <p className="eyebrow">数字货币账户</p>
-          <h1>{wallet.name}</h1>
-        </div>
-        <Link className="secondary button" to="/accounts/crypto">返回</Link>
-      </div>
+    <>
       {error && <p className="banner error">{error}</p>}
-      <section className="panel">
-        <dl className="facts">
-          <div><dt>地址</dt><dd className="mono copy-line">{wallet.address}<CopyButton value={wallet.address} /></dd></div>
-          <div><dt>创建时间</dt><dd>{formatTime(wallet.created_at)}</dd></div>
-        </dl>
-      </section>
-    </section>
+      {wallet && (
+        <section className="panel">
+          <header className="panel-head">
+            <h1><i className="mark" />{wallet.name}</h1>
+            <div className="tools"><Link className="link" to="/accounts/crypto">返回列表</Link></div>
+          </header>
+          <div className="panel-body">
+            <p className="sub">创建于 {formatTime(wallet.created_at)}</p>
+            {wallet.accounts.map((account) => (
+              <div key={account.id} className="account-block">
+                <h2>{account.name}</h2>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>链</th><th>收款地址</th><th /></tr></thead>
+                    <tbody>
+                      {account.addresses.map((item) => (
+                        <tr key={item.chain}>
+                          <td>{item.chain_label}</td>
+                          <td className="mono">{item.address}</td>
+                          <td><button className="link" type="button" onClick={() => void copy(item.address)}>{copied === item.address ? "已复制" : "复制"}</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   );
 }

@@ -1,8 +1,10 @@
 export function DashboardView() {
   return (
     <section className="panel">
-      <h1>概览</h1>
-      <p className="muted">这里先留空，后面放总览。</p>
+      <header className="panel-head">
+        <h1><i className="mark" />仪表盘</h1>
+      </header>
+      <p className="empty">还没有可展示的内容。</p>
     </section>
   );
 }
