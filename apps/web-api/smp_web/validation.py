@@ -5,7 +5,6 @@ from __future__ import annotations
 import ipaddress
 import re
 
-_HOST = re.compile(r"[A-Za-z0-9._:-]{1,255}\Z")
 _USER = re.compile(r"[A-Za-z0-9._-]{1,64}\Z")
 
 
@@ -77,23 +76,16 @@ def clean_name(value: str) -> str:
 
 
 def clean_host(value: str) -> str:
-    """Accept a public or private address: IPv4, IPv6, or a hostname."""
+    """Accept a public or private IP address."""
     cleaned = value.strip().rstrip(".")
     if cleaned.startswith("[") and cleaned.endswith("]"):
         cleaned = cleaned[1:-1]
-    if not cleaned or len(cleaned) > 255 or any(char.isspace() for char in cleaned):
-        raise FieldError("地址格式不正确")
+    if not cleaned or any(char.isspace() for char in cleaned):
+        raise FieldError("地址请填写 IP")
     try:
         return str(ipaddress.ip_address(cleaned))
-    except ValueError:
-        pass
-    try:
-        encoded = cleaned.encode("idna").decode("ascii")
-    except UnicodeError as exc:
-        raise FieldError("地址格式不正确") from exc
-    if _HOST.fullmatch(cleaned) is None and _HOST.fullmatch(encoded) is None:
-        raise FieldError("地址格式不正确")
-    return cleaned
+    except ValueError as exc:
+        raise FieldError("地址请填写 IP") from exc
 
 
 def clean_user(value: str) -> str:

@@ -4,6 +4,8 @@ import { useRouter } from "vue-router";
 import { ApiError, api, formatTime, reachabilityLabel, type ServerGroup, type ServerSummary } from "../../api";
 import StatusPill from "../../components/StatusPill.vue";
 import UsageMeter from "../../components/UsageMeter.vue";
+import CopyButton from "../../components/CopyButton.vue";
+import NameEditor from "../../components/NameEditor.vue";
 import { byteCaption, percentOf } from "../../usage";
 
 const router = useRouter();
@@ -97,6 +99,15 @@ async function removeGroup(id: string) {
   }
 }
 
+function renameServer(server: ServerSummary, name: string) {
+  server.name = name;
+  error.value = "";
+}
+
+function renameFailed(message: string) {
+  error.value = message;
+}
+
 async function moveServer(server: ServerSummary, event: Event) {
   const value = (event.target as HTMLSelectElement).value;
   error.value = "";
@@ -159,8 +170,8 @@ async function moveServer(server: ServerSummary, event: Event) {
               <td colspan="11">这个分组还没有服务器。</td>
             </tr>
             <tr v-for="server in section.servers" :key="server.id" @click="openServer(server.id)">
-              <td>{{ server.name }}</td>
-              <td class="mono nowrap">{{ server.ssh_user }}@{{ server.intranet_host }}:{{ server.ssh_port }}</td>
+              <td><NameEditor :id="server.id" :name="server.name" @saved="renameServer(server, $event)" @failed="renameFailed" /></td>
+              <td class="mono nowrap"><span class="copy-line">{{ server.intranet_host }}<CopyButton :value="server.intranet_host" /></span></td>
               <td class="nowrap">{{ server.region || "—" }}</td>
               <td><StatusPill :value="server.reachability" :label="reachabilityLabel[server.reachability] || server.reachability" /></td>
               <td><UsageMeter :caption="server.cpu_cores ? `${server.cpu_cores} 核` : ''" :percent="server.cpu_percent" /></td>

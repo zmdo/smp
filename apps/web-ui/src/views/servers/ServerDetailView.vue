@@ -16,6 +16,8 @@ import {
 } from "../../api";
 import StatusPill from "../../components/StatusPill.vue";
 import UsageMeter from "../../components/UsageMeter.vue";
+import CopyButton from "../../components/CopyButton.vue";
+import NameEditor from "../../components/NameEditor.vue";
 import { byteCaption, percentOf } from "../../usage";
 
 const route = useRoute();
@@ -55,6 +57,11 @@ async function load() {
   } catch (err) {
     if (!server.value) error.value = err instanceof ApiError ? err.message : "加载失败";
   }
+}
+
+function renameServer(name: string) {
+  if (server.value) server.value.name = name;
+  error.value = "";
 }
 
 async function watchJob(id: string) {
@@ -134,10 +141,10 @@ const showContainers = computed(() => {
 
     <section class="node-card">
       <div class="node-title">
-        <strong>{{ server.name }}</strong>
+        <NameEditor v-if="server" :id="server.id" :name="server.name" @saved="renameServer" @failed="error = $event" />
         <StatusPill :value="server.reachability" :label="reachabilityLabel[server.reachability] || server.reachability" />
       </div>
-      <p class="sub mono">{{ server.ssh_user }}@{{ server.intranet_host }}:{{ server.ssh_port }}</p>
+      <p class="sub mono copy-line"><span>{{ server.intranet_host }}</span><CopyButton :value="server.intranet_host" /></p>
       <div class="usage-row">
         <div>
           <span>CPU</span>
@@ -154,6 +161,8 @@ const showContainers = computed(() => {
       </div>
       <div class="node-grid">
         <div><span>区域</span>{{ server.region || "—" }}</div>
+        <div><span>SSH 用户</span>{{ server.ssh_user }}</div>
+        <div><span>端口</span>{{ server.ssh_port }}</div>
         <div><span>分组</span>{{ server.group_name || "未分组" }}</div>
         <div><span>登录</span>{{ server.auth_method === "private_key" ? (server.ssh_key_name || "密钥") : "口令" }}</div>
         <div><span>Docker</span>{{ server.docker_version || "—" }}</div>
